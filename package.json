@@ -1,0 +1,20 @@
+{
+  "name": "tiktok-competitor-analyzer",
+  "version": "1.0.0",
+  "description": "A web application for analyzing TikTok competitors",
+  "main": "src/js/app.js",
+  "scripts": {
+    "start": "live-server public --port=3000",
+    "dev": "live-server public --port=3000 --watch=src",
+    "build": "echo 'Build script placeholder'"
+  },
+  "keywords": ["tiktok", "competitor-analysis", "social-media", "analytics"],
+  "author": "TumiLabsJN",
+  "license": "MIT",
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  },
+  "dependencies": {
+    "chart.js": "^4.4.0"
+  }
+}

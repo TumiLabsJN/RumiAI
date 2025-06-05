@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Competitor Analyzer</title>
+    <link rel="stylesheet" href="../src/css/styles.css">
+</head>
+<body>
+    <header>
+        <h1>TikTok Competitor Analyzer</h1>
+        <p>Analyze and compare TikTok competitors</p>
+    </header>
+
+    <main>
+        <section class="dashboard">
+            <div class="card">
+                <h2>Competitor Overview</h2>
+                <div id="competitor-list">
+                    <p>Loading competitors...</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Analytics Dashboard</h2>
+                <canvas id="analytics-chart"></canvas>
+            </div>
+
+            <div class="card">
+                <h2>Add Competitor</h2>
+                <form id="add-competitor-form">
+                    <input type="text" id="competitor-name" placeholder="Competitor name" required>
+                    <input type="url" id="competitor-url" placeholder="TikTok profile URL" required>
+                    <button type="submit">Add Competitor</button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <script src="../src/js/app.js"></script>
+</body>
+</html>
