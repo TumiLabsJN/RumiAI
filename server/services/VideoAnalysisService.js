@@ -513,53 +513,237 @@ class VideoAnalysisService {
     }
 
     /**
-     * Build comprehensive prompt for Claude analysis
+     * Build TikTok-specific structured prompt for Claude analysis
      */
     buildClaudePrompt(intelligenceResults, originalVideos) {
-        return `
-Analyze these TikTok videos for advanced insights. Provide a comprehensive JSON response with the following structure:
+        // Process and clean data for each video
+        const processedVideos = intelligenceResults.map((video, index) => {
+            const cleanTranscript = this.sanitizeTranscript(video.analysis.transcript);
+            const visualLabels = this.processVisualLabels(video.analysis.labels);
+            const videoMetadata = this.extractVideoMetadata(video, originalVideos[index]);
+            const hookData = this.analyzeHookData(video.analysis.hooks, video.duration);
+            
+            return {
+                videoNumber: index + 1,
+                rank: video.rank,
+                cleanTranscript,
+                visualLabels,
+                videoMetadata,
+                hookData
+            };
+        });
 
-VIDEOS DATA:
-${JSON.stringify(intelligenceResults.map(video => ({
-    rank: video.rank,
-    engagementRate: video.engagementRate,
-    views: video.views,
-    duration: video.duration,
-    transcript: video.analysis.transcript,
-    labels: video.analysis.labels,
-    textDetections: video.analysis.textDetections,
-    hooks: video.analysis.hooks
-})), null, 2)}
+        // Count total tokens to manage Claude's limits
+        const estimatedTokens = this.estimateTokenCount(processedVideos);
+        console.log(`📊 Estimated prompt tokens: ${estimatedTokens}`);
 
-Required JSON Response Format:
+        // Chunk if necessary (Claude-3-Sonnet has ~200k context limit)
+        const finalVideos = estimatedTokens > 150000 ? 
+            this.chunkLargeTranscripts(processedVideos) : 
+            processedVideos;
+
+        const prompt = `You are an AI content analyst specialized in TikTok performance optimization for creators and brands.
+
+TASK: Analyze ${finalVideos.length} TikTok videos and extract actionable creative insights focused on:
+- Hook effectiveness (first 3 seconds)
+- TikTok algorithm optimization
+- Engagement-driving elements
+- Viral potential indicators
+- Content strategy recommendations
+
+ANALYSIS DATA:
+${finalVideos.map(video => this.buildVideoSection(video)).join('\n\n')}
+
+ENGAGEMENT CONTEXT:
+${this.buildEngagementContext(originalVideos)}
+
+TikTok Algorithm Considerations:
+- Vertical video format optimized for mobile
+- Algorithm favors watch time, completion rate, and immediate engagement
+- Hook quality in first 3 seconds is critical for algorithm promotion
+- Trending sounds and effects boost discoverability
+- Authentic, relatable content performs better than polished production
+
+Return ONLY a valid JSON object with this exact structure:
+
 {
-  "brandRecognition": {
-    "products": ["list of products/brands detected"],
-    "animals": ["list of animals detected"],
-    "themes": ["list of recurring themes"]
-  },
   "hookAnalysis": {
-    "effectiveness": "rating from 1-10",
-    "patterns": ["list of effective hook patterns"],
-    "recommendations": ["specific hook improvement suggestions"]
+    "effectiveness": "rating from 1-10 with decimal precision",
+    "patterns": ["specific hook patterns that work well", "opening techniques used"],
+    "firstThreeSeconds": ["what happens in the critical first 3 seconds of top videos"],
+    "recommendations": ["specific improvements to hook strategy", "timing adjustments"]
   },
-  "sentimentAnalysis": {
-    "overallTone": "positive/negative/neutral",
-    "emotionalCues": ["list of emotional elements"],
-    "audience": "target audience description"
+  "transcriptInsights": {
+    "overallTone": "positive/negative/neutral/mixed",
+    "sentiment": "detailed sentiment analysis of spoken content",
+    "wordCount": "average word count per video",
+    "keyPhrases": ["most impactful phrases", "repeated themes"],
+    "callToActions": ["identified CTAs", "effectiveness assessment"]
   },
-  "visualTrends": {
-    "cuts": "average cuts per video",
-    "pace": "fast/medium/slow",
-    "effects": ["list of visual effects used"]
+  "visualDetection": {
+    "products": ["specific products/brands detected"],
+    "animals": ["animals or pets identified"],
+    "logos": ["brand logos or text overlays"],
+    "themes": ["recurring visual themes", "consistent styling"],
+    "settings": ["common locations or backgrounds"]
   },
-  "optimizationSuggestions": [
-    "specific actionable recommendations based on the data"
+  "paceAndEditing": {
+    "averageCuts": "estimated cuts per video",
+    "editingPace": "fast/medium/slow",
+    "transitions": ["transition types used", "editing techniques"],
+    "effects": ["TikTok effects and filters used"],
+    "visualStyle": "description of overall visual approach"
+  },
+  "tiktokOptimization": [
+    "specific TikTok algorithm optimization recommendations",
+    "engagement-driving improvements",
+    "hook timing adjustments",
+    "content format suggestions",
+    "trend utilization strategies"
   ]
 }
 
-Focus on actionable insights based on the actual video content and performance data.
-`;
+Focus on TikTok-specific insights that can directly improve engagement and algorithm performance.`;
+
+        return prompt;
+    }
+
+    /**
+     * Build individual video section for prompt
+     */
+    buildVideoSection(video) {
+        return `--- VIDEO ${video.videoNumber} (Rank #${video.rank}) ---
+
+TRANSCRIPT:
+"""
+${video.cleanTranscript}
+"""
+
+VISUAL ELEMENTS DETECTED:
+${JSON.stringify(video.visualLabels, null, 2)}
+
+VIDEO PERFORMANCE DATA:
+${JSON.stringify(video.videoMetadata, null, 2)}
+
+HOOK ANALYSIS (First 3 Seconds):
+${JSON.stringify(video.hookData, null, 2)}`;
+    }
+
+    /**
+     * Build engagement context across all videos
+     */
+    buildEngagementContext(originalVideos) {
+        const totalVideos = originalVideos.length;
+        const avgEngagement = originalVideos.reduce((sum, v) => sum + v.engagementRate, 0) / totalVideos;
+        const totalViews = originalVideos.reduce((sum, v) => sum + v.views, 0);
+        const avgDuration = originalVideos.reduce((sum, v) => sum + (v.duration || 30), 0) / totalVideos;
+
+        return `Total Videos Analyzed: ${totalVideos}
+Average Engagement Rate: ${avgEngagement.toFixed(2)}%
+Total Combined Views: ${totalViews.toLocaleString()}
+Average Video Duration: ${avgDuration.toFixed(1)} seconds
+Analysis Period: Mix of recent (0-30 days) and historical (30-60 days) content`;
+    }
+
+    /**
+     * Sanitize transcript for prompt safety
+     */
+    sanitizeTranscript(transcript) {
+        if (!transcript || typeof transcript !== 'string') {
+            return 'No transcript available';
+        }
+
+        return transcript
+            .replace(/["""]/g, '"')  // Normalize quotes
+            .replace(/[\r\n]+/g, ' ')  // Replace line breaks with spaces
+            .replace(/\s+/g, ' ')  // Normalize whitespace
+            .trim()
+            .substring(0, 2000);  // Limit length to prevent token overflow
+    }
+
+    /**
+     * Process visual labels into structured format
+     */
+    processVisualLabels(labels) {
+        if (!labels || !Array.isArray(labels)) {
+            return { objects: [], confidence: 'low', count: 0 };
+        }
+
+        const processed = labels
+            .filter(label => label.confidence > 0.5)  // Only high-confidence labels
+            .map(label => ({
+                description: label.description,
+                confidence: Math.round(label.confidence * 100) / 100
+            }))
+            .slice(0, 20);  // Limit to top 20 labels
+
+        return {
+            objects: processed,
+            confidence: processed.length > 0 ? 'high' : 'low',
+            count: processed.length
+        };
+    }
+
+    /**
+     * Extract video metadata
+     */
+    extractVideoMetadata(video, originalVideo) {
+        return {
+            rank: video.rank,
+            engagementRate: `${video.engagementRate}%`,
+            views: video.views.toLocaleString(),
+            likes: video.likes.toLocaleString(),
+            comments: video.comments.toLocaleString(),
+            shares: video.shares.toLocaleString(),
+            duration: `${video.duration}s`,
+            createTime: video.createTime,
+            timePeriod: video.rank <= 3 ? 'Recent (0-30 days)' : 'Historical (30-60 days)'
+        };
+    }
+
+    /**
+     * Analyze hook data from first 3 seconds
+     */
+    analyzeHookData(hooks, duration) {
+        if (!hooks) {
+            return { elements: [], timing: 'unknown', effectiveness: 'unknown' };
+        }
+
+        return {
+            elements: hooks.labels || [],
+            textOverlays: hooks.text || [],
+            faceCount: hooks.faces || 0,
+            objects: hooks.objects || [],
+            timing: '0-3 seconds',
+            duration: `${duration}s total`
+        };
+    }
+
+    /**
+     * Estimate token count for prompt management
+     */
+    estimateTokenCount(processedVideos) {
+        const basePromptTokens = 1500;  // Base prompt structure
+        const videoTokens = processedVideos.reduce((total, video) => {
+            const transcriptTokens = Math.ceil((video.cleanTranscript?.length || 0) / 4);
+            const metadataTokens = 200;  // Estimated for metadata
+            return total + transcriptTokens + metadataTokens;
+        }, 0);
+
+        return basePromptTokens + videoTokens;
+    }
+
+    /**
+     * Chunk large transcripts if needed
+     */
+    chunkLargeTranscripts(processedVideos) {
+        console.log('⚠️ Large transcript detected, applying chunking...');
+        
+        return processedVideos.map(video => ({
+            ...video,
+            cleanTranscript: video.cleanTranscript.substring(0, 1000) + 
+                (video.cleanTranscript.length > 1000 ? '... [truncated for length]' : '')
+        }));
     }
 
     /**
@@ -584,28 +768,37 @@ Focus on actionable insights based on the actual video content and performance d
      */
     generateFallbackInsights(intelligenceResults = []) {
         return {
-            brandRecognition: {
+            hookAnalysis: {
+                effectiveness: '7.0',
+                patterns: ['Analysis in progress'],
+                firstThreeSeconds: ['Video content analysis pending'],
+                recommendations: ['Detailed hook analysis will be available shortly']
+            },
+            transcriptInsights: {
+                overallTone: 'neutral',
+                sentiment: 'Analysis pending - transcript processing in progress',
+                wordCount: 'Calculating...',
+                keyPhrases: ['Analysis pending'],
+                callToActions: ['CTA analysis in progress']
+            },
+            visualDetection: {
                 products: ['Analysis pending'],
                 animals: ['Analysis pending'],
-                themes: ['Analysis pending']
+                logos: ['Analysis pending'],
+                themes: ['Analysis pending'],
+                settings: ['Analysis pending']
             },
-            hookAnalysis: {
-                effectiveness: 'Pending',
-                patterns: ['Analysis in progress'],
-                recommendations: ['Detailed analysis will be available shortly']
+            paceAndEditing: {
+                averageCuts: 'Analyzing',
+                editingPace: 'medium',
+                transitions: ['Analysis pending'],
+                effects: ['Analysis pending'],
+                visualStyle: 'Analysis in progress'
             },
-            sentimentAnalysis: {
-                overallTone: 'neutral',
-                emotionalCues: ['Analysis pending'],
-                audience: 'General audience'
-            },
-            visualTrends: {
-                cuts: 'Analyzing',
-                pace: 'medium',
-                effects: ['Analysis pending']
-            },
-            optimizationSuggestions: [
-                'Full analysis will be available once processing completes'
+            tiktokOptimization: [
+                'Full TikTok optimization analysis will be available once processing completes',
+                'Algorithm insights pending video intelligence completion',
+                'Engagement recommendations being generated'
             ]
         };
     }

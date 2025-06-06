@@ -1296,6 +1296,12 @@ class TumiLabsAnalyzer {
                                 ${insights.hookAnalysis.patterns.map(pattern => `<li>${pattern}</li>`).join('')}
                             </ul>
                         </div>
+                        <div class="hook-first-seconds">
+                            <h5>First 3 Seconds Analysis:</h5>
+                            <ul>
+                                ${insights.hookAnalysis.firstThreeSeconds.map(element => `<li>${element}</li>`).join('')}
+                            </ul>
+                        </div>
                         <div class="hook-recommendations">
                             <h5>Hook Improvements:</h5>
                             <ul>
@@ -1305,14 +1311,14 @@ class TumiLabsAnalyzer {
                     </div>
                 </div>
 
-                <!-- Brand & Content Recognition -->
+                <!-- Visual Detection -->
                 <div class="video-section">
-                    <h4>🏷️ Brand & Content Recognition</h4>
+                    <h4>🏷️ Visual Detection & Content Recognition</h4>
                     <div class="recognition-grid">
                         <div class="recognition-category">
                             <h5>Products Detected:</h5>
                             <div class="recognition-tags">
-                                ${insights.brandRecognition.products.map(product => 
+                                ${insights.visualDetection.products.map(product => 
                                     `<span class="recognition-tag product-tag">${product}</span>`
                                 ).join('')}
                             </div>
@@ -1320,61 +1326,103 @@ class TumiLabsAnalyzer {
                         <div class="recognition-category">
                             <h5>Animals Detected:</h5>
                             <div class="recognition-tags">
-                                ${insights.brandRecognition.animals.map(animal => 
+                                ${insights.visualDetection.animals.map(animal => 
                                     `<span class="recognition-tag animal-tag">${animal}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                        <div class="recognition-category">
+                            <h5>Logos & Text:</h5>
+                            <div class="recognition-tags">
+                                ${insights.visualDetection.logos.map(logo => 
+                                    `<span class="recognition-tag logo-tag">${logo}</span>`
                                 ).join('')}
                             </div>
                         </div>
                         <div class="recognition-category">
                             <h5>Themes:</h5>
                             <div class="recognition-tags">
-                                ${insights.brandRecognition.themes.map(theme => 
+                                ${insights.visualDetection.themes.map(theme => 
                                     `<span class="recognition-tag theme-tag">${theme}</span>`
                                 ).join('')}
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Sentiment Analysis -->
-                <div class="video-section">
-                    <h4>💭 Sentiment & Tone Analysis</h4>
-                    <div class="sentiment-analysis">
-                        <div class="sentiment-overview">
-                            <span class="sentiment-tone sentiment-${insights.sentimentAnalysis.overallTone}">
-                                ${insights.sentimentAnalysis.overallTone.toUpperCase()}
-                            </span>
-                            <span class="sentiment-audience">${insights.sentimentAnalysis.audience}</span>
-                        </div>
-                        <div class="emotional-cues">
-                            <h5>Emotional Elements:</h5>
-                            <div class="emotion-tags">
-                                ${insights.sentimentAnalysis.emotionalCues.map(emotion => 
-                                    `<span class="emotion-tag">${emotion}</span>`
+                        <div class="recognition-category">
+                            <h5>Settings:</h5>
+                            <div class="recognition-tags">
+                                ${insights.visualDetection.settings.map(setting => 
+                                    `<span class="recognition-tag setting-tag">${setting}</span>`
                                 ).join('')}
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Visual Trends -->
+                <!-- Transcript Insights -->
                 <div class="video-section">
-                    <h4>🎨 Visual Trends & Effects</h4>
-                    <div class="visual-trends">
-                        <div class="trend-metrics">
-                            <div class="trend-metric">
-                                <span class="trend-label">Average Cuts:</span>
-                                <span class="trend-value">${insights.visualTrends.cuts}</span>
+                    <h4>💭 Transcript & Sentiment Analysis</h4>
+                    <div class="transcript-insights">
+                        <div class="sentiment-overview">
+                            <span class="sentiment-tone sentiment-${insights.transcriptInsights.overallTone}">
+                                ${insights.transcriptInsights.overallTone.toUpperCase()}
+                            </span>
+                            <span class="sentiment-detail">${insights.transcriptInsights.sentiment}</span>
+                        </div>
+                        <div class="transcript-metrics">
+                            <div class="transcript-metric">
+                                <span class="transcript-label">Average Word Count:</span>
+                                <span class="transcript-value">${insights.transcriptInsights.wordCount}</span>
                             </div>
-                            <div class="trend-metric">
-                                <span class="trend-label">Pace:</span>
-                                <span class="trend-value">${insights.visualTrends.pace}</span>
+                        </div>
+                        <div class="key-phrases">
+                            <h5>Key Phrases:</h5>
+                            <div class="phrase-tags">
+                                ${insights.transcriptInsights.keyPhrases.map(phrase => 
+                                    `<span class="phrase-tag">${phrase}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                        <div class="cta-analysis">
+                            <h5>Call-to-Actions:</h5>
+                            <div class="cta-tags">
+                                ${insights.transcriptInsights.callToActions.map(cta => 
+                                    `<span class="cta-tag">${cta}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pace and Editing -->
+                <div class="video-section">
+                    <h4>🎬 Pace & Editing Analysis</h4>
+                    <div class="pace-editing">
+                        <div class="editing-metrics">
+                            <div class="editing-metric">
+                                <span class="editing-label">Average Cuts:</span>
+                                <span class="editing-value">${insights.paceAndEditing.averageCuts}</span>
+                            </div>
+                            <div class="editing-metric">
+                                <span class="editing-label">Editing Pace:</span>
+                                <span class="editing-value pace-${insights.paceAndEditing.editingPace}">${insights.paceAndEditing.editingPace.toUpperCase()}</span>
+                            </div>
+                            <div class="editing-metric">
+                                <span class="editing-label">Visual Style:</span>
+                                <span class="editing-value">${insights.paceAndEditing.visualStyle}</span>
+                            </div>
+                        </div>
+                        <div class="transitions-analysis">
+                            <h5>Transition Techniques:</h5>
+                            <div class="transition-tags">
+                                ${insights.paceAndEditing.transitions.map(transition => 
+                                    `<span class="transition-tag">${transition}</span>`
+                                ).join('')}
                             </div>
                         </div>
                         <div class="effects-used">
-                            <h5>Effects Detected:</h5>
+                            <h5>Effects & Filters:</h5>
                             <div class="effect-tags">
-                                ${insights.visualTrends.effects.map(effect => 
+                                ${insights.paceAndEditing.effects.map(effect => 
                                     `<span class="effect-tag">${effect}</span>`
                                 ).join('')}
                             </div>
@@ -1382,18 +1430,21 @@ class TumiLabsAnalyzer {
                     </div>
                 </div>
 
-                <!-- Optimization Suggestions -->
+                <!-- TikTok Optimization -->
                 <div class="video-section">
-                    <h4>💡 AI-Powered Optimization Suggestions</h4>
-                    <div class="optimization-suggestions">
-                        <ul class="suggestion-list">
-                            ${insights.optimizationSuggestions.map(suggestion => 
-                                `<li class="suggestion-item">
-                                    <i class="fas fa-lightbulb"></i>
+                    <h4>🚀 TikTok Algorithm Optimization</h4>
+                    <div class="tiktok-optimization">
+                        <ul class="optimization-list">
+                            ${insights.tiktokOptimization.map(suggestion => 
+                                `<li class="optimization-item">
+                                    <i class="fas fa-rocket"></i>
                                     ${suggestion}
                                 </li>`
                             ).join('')}
                         </ul>
+                        <div class="optimization-note">
+                            <p><strong>Note:</strong> These recommendations are specifically tailored for TikTok's algorithm and engagement patterns based on your video analysis.</p>
+                        </div>
                     </div>
                 </div>
 
