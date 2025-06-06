@@ -7,12 +7,24 @@ class TumiLabsAnalyzer {
         this.videoAnalysisJobId = null;
         this.videoAnalysisPolling = null;
         this.videoAnalysisError = null;
+        this.isAnalysisRunning = false; // Prevent multiple submissions
+        this.requestCounter = 0; // Track request count
         this.init();
     }
 
     init() {
         this.setupEventListeners();
         this.showInitialView();
+        this.addDebugInfo();
+    }
+    
+    addDebugInfo() {
+        console.log('🔧 TumiLabs Analyzer Debug Info:', {
+            currentUrl: window.location.href,
+            origin: window.location.origin,
+            userAgent: navigator.userAgent,
+            timestamp: new Date().toISOString()
+        });
     }
 
     setupEventListeners() {
@@ -53,6 +65,13 @@ class TumiLabsAnalyzer {
     }
 
     async startAnalysis() {
+        // 🚨 CRITICAL: Prevent multiple concurrent requests
+        if (this.isAnalysisRunning) {
+            console.log('⚠️ Analysis already running - ignoring duplicate request');
+            this.showNotification('Analysis already in progress', 'info');
+            return;
+        }
+
         const username = document.getElementById('tiktok-username').value.trim();
         
         console.log('🔍 startAnalysis called with username:', username);
@@ -63,7 +82,11 @@ class TumiLabsAnalyzer {
             return;
         }
 
-        console.log(`🎯 Starting intelligent analysis for @${username}`);
+        // Set analysis running flag and disable button
+        this.isAnalysisRunning = true;
+        this.disableAnalysisButton();
+        this.requestCounter++;
+        console.log(`🎯 Starting analysis #${this.requestCounter} for @${username}`);
 
         this.hideElement('analysis-input');
         this.showElement('analysis-progress');
@@ -101,6 +124,11 @@ class TumiLabsAnalyzer {
                     this.resetToInitialView();
                 }
             }
+        } finally {
+            // 🚨 CRITICAL: Always re-enable analysis button
+            this.isAnalysisRunning = false;
+            this.enableAnalysisButton();
+            console.log(`✅ Analysis #${this.requestCounter} completed/failed - button re-enabled`);
         }
     }
 
@@ -214,8 +242,8 @@ class TumiLabsAnalyzer {
     }
 
     async fetchWithProgressAndTimeout(username) {
-        const maxRetries = 2;
-        const timeoutMs = 300000; // 5 minute timeout for real TikTok analysis
+        const maxRetries = 0; // 🚨 URGENT FIX: NO RETRIES - ONE REQUEST ONLY
+        const timeoutMs = 600000; // 10 minute timeout for real TikTok analysis
         
         for (let retryCount = 0; retryCount <= maxRetries; retryCount++) {
             try {
@@ -234,8 +262,12 @@ class TumiLabsAnalyzer {
                 this.progressInterval = this.startApiProgressFeedback();
                 
                 const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Request timeout - this may indicate API issues')), timeoutMs)
+                    setTimeout(() => reject(new Error(`Request timeout after ${timeoutMs/60000} minutes - TikTok analysis is taking longer than expected. This may indicate high server load or complex account analysis.`)), timeoutMs)
                 );
+                
+                // 🚨 CRITICAL: Log every fetch call to track duplicates
+                console.log(`🌐 FETCHING /api/tiktok/analyze for @${username} (Request #${this.requestCounter})`);
+                console.log(`🕐 Timestamp: ${new Date().toISOString()}`);
                 
                 const fetchPromise = fetch('/api/tiktok/analyze', {
                     method: 'POST',
@@ -296,6 +328,20 @@ class TumiLabsAnalyzer {
                 
                 console.error(`❌ API attempt ${retryCount + 1} failed:`, error.message);
                 
+                // Enhanced error logging for debugging
+                if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                    console.error('🌐 Network Error Details:', {
+                        error: error.message,
+                        type: 'Network/CORS/Server Connection Issue',
+                        possibleCauses: [
+                            'Server not responding',
+                            'CORS policy blocking request', 
+                            'Network connectivity issues',
+                            'Server overloaded or crashed'
+                        ]
+                    });
+                }
+                
                 // If this is not the last attempt, show retry message and wait
                 if (retryCount < maxRetries) {
                     const retryDelay = (retryCount + 1) * 1000; // 1s, 2s delays
@@ -323,15 +369,19 @@ class TumiLabsAnalyzer {
         let progressStep = 27;
         const messages = [
             'Deep analysis in progress...',
-            'Uncovering engagement patterns...',
-            'Building comprehensive insights...',
+            'Connecting to TikTok servers...',
+            'Downloading video metadata...',
+            'Processing engagement data...',
             'Analyzing audience behavior...',
-            'Extracting performance intelligence...',
+            'Extracting performance metrics...',
+            'Building comprehensive insights...',
             'Processing content strategy data...',
             'Generating competitive insights...',
-            'Finalizing your personalized report...',
-            'Optimizing analysis quality...',
-            'Almost ready with your insights...'
+            'Finalizing personalized report...',
+            'TikTok analysis taking longer than usual...',
+            'Complex account analysis in progress...',
+            'Almost ready with your insights...',
+            'Quality analysis takes time - please wait...'
         ];
         let messageIndex = 0;
         
@@ -920,6 +970,10 @@ class TumiLabsAnalyzer {
         this.videoAnalysisJobId = null;
         this.videoAnalysisError = null;
         
+        // 🚨 CRITICAL: Reset analysis running flag
+        this.isAnalysisRunning = false;
+        this.enableAnalysisButton();
+        
         this.hideCancelButton();
         this.hideRetryButton();
         this.showInitialView();
@@ -1104,6 +1158,24 @@ class TumiLabsAnalyzer {
         } else {
             this.showNotification('Please enter a username to retry', 'error');
             this.resetToInitialView();
+        }
+    }
+
+    disableAnalysisButton() {
+        const submitBtn = document.querySelector('#analysis-form button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Analyzing...';
+            console.log('🚫 Analysis button disabled');
+        }
+    }
+
+    enableAnalysisButton() {
+        const submitBtn = document.querySelector('#analysis-form button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Analyze Performance';
+            console.log('✅ Analysis button enabled');
         }
     }
 

@@ -31,6 +31,9 @@ class TikTokService {
 
             console.log('🚀 Starting Apify actor with input:', input);
             
+            // 🚨 CRITICAL: Log every Apify run trigger
+            console.log(`🌟 APIFY RUN TRIGGERED FOR @${username} - TIMESTAMP: ${new Date().toISOString()}`);
+            
             // Start the actor run (no timeout - we'll poll for status)
             const run = await this.client.actor(this.actorId).start(input);
             console.log('📋 Apify run started:', run.id);
@@ -56,7 +59,56 @@ class TikTokService {
             
             if (analysisResult.requiresFallback) {
                 console.log('📊 Professional Analysis: No sufficient recent content found');
-                throw new Error(`Insufficient analyzable content for @${username}. ${analysisResult.professionalMessage}`);
+                
+                // 🔄 FALLBACK STRATEGY: Use 60 most recent videos regardless of age
+                // This prevents 500 errors for inactive accounts and provides historical insights
+                console.log(`⚠️ Fallback activated: using most recent 60 videos for @${username}`);
+                
+                const fallbackVideos = items
+                    .sort((a, b) => {
+                        const dateA = new Date(a.createTimeISO || a.createTime || 0);
+                        const dateB = new Date(b.createTimeISO || b.createTime || 0);
+                        return dateB - dateA; // Sort descending (newest first)
+                    })
+                    .slice(0, 60); // Take top 60 most recent
+                
+                console.log(`📊 Fallback analysis using ${fallbackVideos.length} most recent videos`);
+                
+                if (fallbackVideos.length === 0) {
+                    // Only throw error if absolutely no videos exist
+                    throw new Error(`No videos found for @${username}. The account may be private, inactive, or does not exist.`);
+                }
+                
+                const topVideos = this.selectTopPerformers(fallbackVideos);
+                const lastVideoDate = fallbackVideos.length > 0 ? 
+                    new Date(fallbackVideos[0].createTimeISO || fallbackVideos[0].createTime) : null;
+                const daysSinceLastPost = lastVideoDate ? 
+                    Math.floor((Date.now() - lastVideoDate.getTime()) / (1000 * 60 * 60 * 24)) : null;
+                
+                return {
+                    username,
+                    totalVideos: items.length,
+                    recentVideos: 0, // No recent videos
+                    allVideosAnalyzed: topVideos,
+                    analysisDate: new Date().toISOString(),
+                    analysisWindow: `Historical Analysis (Most Recent ${fallbackVideos.length} Videos)`,
+                    contentRecency: daysSinceLastPost > 0 ? `${daysSinceLastPost} days since last post` : 'Recent activity',
+                    postingFrequency: 'Historical data only',
+                    professionalInsight: `Note: This account has not published any new videos recently. Analysis is based on older content from ${lastVideoDate ? moment(lastVideoDate).format('MMMM YYYY') : 'historical data'}.`,
+                    isHistoricalAnalysis: true,
+                    historicalPeriod: {
+                        startDate: fallbackVideos.length > 0 ? 
+                            moment(new Date(fallbackVideos[fallbackVideos.length - 1].createTimeISO || fallbackVideos[fallbackVideos.length - 1].createTime)).format('YYYY-MM-DD') : null,
+                        endDate: lastVideoDate ? moment(lastVideoDate).format('YYYY-MM-DD') : null,
+                        daysSinceLastPost
+                    },
+                    criteria: {
+                        minViews: this.minViews,
+                        daysPeriod: 'Historical (no time limit)',
+                        analysisType: 'historical_fallback'
+                    },
+                    dataSource: 'apify'
+                };
             }
             
             return {

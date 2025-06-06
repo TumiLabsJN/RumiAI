@@ -47,3 +47,10 @@ data/credentials/
 # Temporary files
 tmp/
 temp/
+
+# Google Cloud SDK (too large)
+google-cloud-sdk/
+google-cloud-cli-linux-x86_64.tar.gz
+
+# Server logs
+server.log
