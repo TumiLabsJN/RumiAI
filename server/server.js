@@ -61,7 +61,7 @@ app.get('/js/app.js', (req, res) => {
 });
 
 // Try to load routes with error handling
-let tiktokRoutes, analysisRoutes;
+let tiktokRoutes, analysisRoutes, videoAnalysisRoutes;
 
 try {
     console.log('📱 Loading TikTok routes...');
@@ -81,6 +81,15 @@ try {
     console.error('Stack:', error.stack);
 }
 
+try {
+    console.log('🎬 Loading Video Analysis routes...');
+    videoAnalysisRoutes = require('./routes/video-analysis');
+    console.log('✅ Video Analysis routes loaded successfully');
+} catch (error) {
+    console.error('❌ Error loading Video Analysis routes:', error.message);
+    console.error('Stack:', error.stack);
+}
+
 // Only add routes if they loaded successfully
 if (tiktokRoutes) {
     app.use('/api/tiktok', tiktokRoutes);
@@ -90,6 +99,11 @@ if (tiktokRoutes) {
 if (analysisRoutes) {
     app.use('/api/analysis', analysisRoutes);
     console.log('✅ Analysis API routes mounted');
+}
+
+if (videoAnalysisRoutes) {
+    app.use('/api/video-analysis', videoAnalysisRoutes);
+    console.log('✅ Video Analysis API routes mounted');
 }
 
 app.get('/', (req, res) => {

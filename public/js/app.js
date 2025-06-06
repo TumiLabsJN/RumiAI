@@ -4,6 +4,8 @@ class TumiLabsAnalyzer {
         this.performanceChart = null;
         this.abortController = null;
         this.progressInterval = null;
+        this.videoAnalysisJobId = null;
+        this.videoAnalysisPolling = null;
         this.init();
     }
 
@@ -265,6 +267,13 @@ class TumiLabsAnalyzer {
                 }
 
                 console.log(`✅ API successful on attempt ${retryCount + 1}`);
+                
+                // Check if video analysis was started
+                if (result.videoAnalysis && result.videoAnalysis.jobId) {
+                    this.videoAnalysisJobId = result.videoAnalysis.jobId;
+                    console.log(`🎬 Video analysis job ID: ${this.videoAnalysisJobId}`);
+                }
+                
                 return result.data;
                 
             } catch (error) {
@@ -397,6 +406,12 @@ class TumiLabsAnalyzer {
         // Add comprehensive metadata analysis if available
         if (data.metadataIntelligence) {
             this.populateMetadataIntelligence(data.metadataIntelligence);
+        }
+        
+        // Initialize video analysis polling if we have a job ID
+        if (this.videoAnalysisJobId) {
+            this.initVideoAnalysisSection();
+            this.startVideoAnalysisPolling();
         }
     }
 
@@ -877,6 +892,14 @@ class TumiLabsAnalyzer {
             this.performanceChart = null;
         }
         
+        // Clean up video analysis polling
+        if (this.videoAnalysisPolling) {
+            clearInterval(this.videoAnalysisPolling);
+            this.videoAnalysisPolling = null;
+        }
+        
+        this.videoAnalysisJobId = null;
+        
         this.hideCancelButton();
         this.hideRetryButton();
         this.showInitialView();
@@ -1093,6 +1116,325 @@ class TumiLabsAnalyzer {
                 );
             }
         }, 500); // Update every 500ms
+    }
+
+    // Video Analysis Methods
+    initVideoAnalysisSection() {
+        console.log('🎬 Initializing video analysis section');
+        
+        // Create video analysis section if it doesn't exist
+        const resultsContainer = document.getElementById('results-dashboard');
+        if (!resultsContainer) return;
+        
+        let videoSection = document.getElementById('video-analysis-section');
+        if (!videoSection) {
+            videoSection = document.createElement('div');
+            videoSection.id = 'video-analysis-section';
+            videoSection.className = 'card video-analysis-card';
+            videoSection.innerHTML = `
+                <div class="video-analysis-header">
+                    <h3>🎬 Advanced Video Analysis</h3>
+                    <div id="video-analysis-status" class="video-status">
+                        <span class="status-text">Initializing AI analysis...</span>
+                        <div class="status-progress">
+                            <div id="video-progress-fill" class="video-progress-fill" style="width: 0%"></div>
+                        </div>
+                        <span id="video-progress-percentage" class="progress-percentage">0%</span>
+                    </div>
+                </div>
+                <div id="video-analysis-content" class="video-analysis-content">
+                    <div class="analysis-placeholder">
+                        <div class="placeholder-icon">🧠</div>
+                        <p>AI-powered video analysis is processing your content...</p>
+                        <p class="placeholder-subtitle">This may take 2-5 minutes to complete</p>
+                    </div>
+                </div>
+            `;
+            resultsContainer.appendChild(videoSection);
+        }
+        
+        // Show the section
+        videoSection.classList.remove('hidden');
+    }
+
+    startVideoAnalysisPolling() {
+        if (!this.videoAnalysisJobId) return;
+        
+        console.log(`🔄 Starting video analysis polling for job: ${this.videoAnalysisJobId}`);
+        
+        this.videoAnalysisPolling = setInterval(async () => {
+            try {
+                const status = await this.checkVideoAnalysisStatus();
+                this.updateVideoAnalysisDisplay(status);
+                
+                if (status.status === 'completed') {
+                    clearInterval(this.videoAnalysisPolling);
+                    await this.loadVideoAnalysisResults();
+                } else if (status.status === 'failed') {
+                    clearInterval(this.videoAnalysisPolling);
+                    this.showVideoAnalysisError(status.error);
+                }
+            } catch (error) {
+                console.error('❌ Video analysis polling error:', error);
+                // Continue polling unless it's a critical error
+            }
+        }, 5000); // Poll every 5 seconds
+    }
+
+    async checkVideoAnalysisStatus() {
+        const response = await fetch(`/api/video-analysis/status/${this.videoAnalysisJobId}`);
+        const result = await response.json();
+        
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to get video analysis status');
+        }
+        
+        return result.data;
+    }
+
+    updateVideoAnalysisDisplay(status) {
+        const statusElement = document.getElementById('video-analysis-status');
+        const progressFill = document.getElementById('video-progress-fill');
+        const progressPercentage = document.getElementById('video-progress-percentage');
+        const statusText = statusElement.querySelector('.status-text');
+        
+        if (statusText) {
+            statusText.textContent = status.message || 'Processing...';
+        }
+        
+        if (progressFill) {
+            progressFill.style.width = `${status.progress}%`;
+        }
+        
+        if (progressPercentage) {
+            progressPercentage.textContent = `${status.progress}%`;
+        }
+        
+        console.log(`🎬 Video analysis progress: ${status.progress}% - ${status.message}`);
+    }
+
+    async loadVideoAnalysisResults() {
+        try {
+            console.log('📊 Loading video analysis results...');
+            
+            const response = await fetch(`/api/video-analysis/results/${this.videoAnalysisJobId}`);
+            const result = await response.json();
+            
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to load video analysis results');
+            }
+            
+            this.displayVideoAnalysisResults(result.data.results);
+            
+        } catch (error) {
+            console.error('❌ Failed to load video analysis results:', error);
+            this.showVideoAnalysisError(error.message);
+        }
+    }
+
+    displayVideoAnalysisResults(results) {
+        console.log('🎬 Displaying video analysis results:', results);
+        
+        const contentContainer = document.getElementById('video-analysis-content');
+        if (!contentContainer) return;
+        
+        const insights = results.insights;
+        const videos = results.videos;
+        const summary = results.summary;
+        
+        contentContainer.innerHTML = `
+            <div class="video-results-container">
+                <!-- Performance Snapshot -->
+                <div class="video-section">
+                    <h4>📊 Performance Snapshot</h4>
+                    <div class="video-grid">
+                        ${videos.map((video, index) => `
+                            <div class="video-card">
+                                <div class="video-rank">#${video.rank}</div>
+                                <div class="video-metrics">
+                                    <span class="metric"><i class="fas fa-eye"></i> ${this.formatNumber(video.views)}</span>
+                                    <span class="metric"><i class="fas fa-chart-line"></i> ${video.engagementRate}%</span>
+                                    <span class="metric"><i class="fas fa-clock"></i> ${video.duration}s</span>
+                                </div>
+                                <div class="video-period">${index < 3 ? 'Recent (0-30 days)' : 'Historical (30-60 days)'}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <!-- Hook Analysis -->
+                <div class="video-section">
+                    <h4>🎯 Hook Effectiveness Analysis</h4>
+                    <div class="hook-analysis">
+                        <div class="hook-rating">
+                            <span class="hook-score">${insights.hookAnalysis.effectiveness}</span>
+                            <span class="hook-label">Hook Effectiveness Rating</span>
+                        </div>
+                        <div class="hook-patterns">
+                            <h5>Effective Patterns:</h5>
+                            <ul>
+                                ${insights.hookAnalysis.patterns.map(pattern => `<li>${pattern}</li>`).join('')}
+                            </ul>
+                        </div>
+                        <div class="hook-recommendations">
+                            <h5>Hook Improvements:</h5>
+                            <ul>
+                                ${insights.hookAnalysis.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Brand & Content Recognition -->
+                <div class="video-section">
+                    <h4>🏷️ Brand & Content Recognition</h4>
+                    <div class="recognition-grid">
+                        <div class="recognition-category">
+                            <h5>Products Detected:</h5>
+                            <div class="recognition-tags">
+                                ${insights.brandRecognition.products.map(product => 
+                                    `<span class="recognition-tag product-tag">${product}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                        <div class="recognition-category">
+                            <h5>Animals Detected:</h5>
+                            <div class="recognition-tags">
+                                ${insights.brandRecognition.animals.map(animal => 
+                                    `<span class="recognition-tag animal-tag">${animal}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                        <div class="recognition-category">
+                            <h5>Themes:</h5>
+                            <div class="recognition-tags">
+                                ${insights.brandRecognition.themes.map(theme => 
+                                    `<span class="recognition-tag theme-tag">${theme}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sentiment Analysis -->
+                <div class="video-section">
+                    <h4>💭 Sentiment & Tone Analysis</h4>
+                    <div class="sentiment-analysis">
+                        <div class="sentiment-overview">
+                            <span class="sentiment-tone sentiment-${insights.sentimentAnalysis.overallTone}">
+                                ${insights.sentimentAnalysis.overallTone.toUpperCase()}
+                            </span>
+                            <span class="sentiment-audience">${insights.sentimentAnalysis.audience}</span>
+                        </div>
+                        <div class="emotional-cues">
+                            <h5>Emotional Elements:</h5>
+                            <div class="emotion-tags">
+                                ${insights.sentimentAnalysis.emotionalCues.map(emotion => 
+                                    `<span class="emotion-tag">${emotion}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visual Trends -->
+                <div class="video-section">
+                    <h4>🎨 Visual Trends & Effects</h4>
+                    <div class="visual-trends">
+                        <div class="trend-metrics">
+                            <div class="trend-metric">
+                                <span class="trend-label">Average Cuts:</span>
+                                <span class="trend-value">${insights.visualTrends.cuts}</span>
+                            </div>
+                            <div class="trend-metric">
+                                <span class="trend-label">Pace:</span>
+                                <span class="trend-value">${insights.visualTrends.pace}</span>
+                            </div>
+                        </div>
+                        <div class="effects-used">
+                            <h5>Effects Detected:</h5>
+                            <div class="effect-tags">
+                                ${insights.visualTrends.effects.map(effect => 
+                                    `<span class="effect-tag">${effect}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Optimization Suggestions -->
+                <div class="video-section">
+                    <h4>💡 AI-Powered Optimization Suggestions</h4>
+                    <div class="optimization-suggestions">
+                        <ul class="suggestion-list">
+                            ${insights.optimizationSuggestions.map(suggestion => 
+                                `<li class="suggestion-item">
+                                    <i class="fas fa-lightbulb"></i>
+                                    ${suggestion}
+                                </li>`
+                            ).join('')}
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Analysis Summary -->
+                <div class="video-section">
+                    <h4>📈 Analysis Summary</h4>
+                    <div class="analysis-summary">
+                        <div class="summary-metrics">
+                            <div class="summary-metric">
+                                <span class="summary-label">Videos Analyzed:</span>
+                                <span class="summary-value">${summary.videosAnalyzed}</span>
+                            </div>
+                            <div class="summary-metric">
+                                <span class="summary-label">Avg Engagement:</span>
+                                <span class="summary-value">${summary.avgEngagement.toFixed(2)}%</span>
+                            </div>
+                            <div class="summary-metric">
+                                <span class="summary-label">Total Views:</span>
+                                <span class="summary-value">${this.formatNumber(summary.totalViews)}</span>
+                            </div>
+                        </div>
+                        <div class="key-findings">
+                            <h5>Key Findings:</h5>
+                            <ul>
+                                ${summary.keyFindings.map(finding => `<li>${finding}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Update status to show completion
+        this.updateVideoAnalysisDisplay({
+            progress: 100,
+            message: 'Video analysis complete! 🎉'
+        });
+        
+        console.log('✅ Video analysis results displayed successfully');
+    }
+
+    showVideoAnalysisError(errorMessage) {
+        const contentContainer = document.getElementById('video-analysis-content');
+        if (!contentContainer) return;
+        
+        contentContainer.innerHTML = `
+            <div class="analysis-error">
+                <div class="error-icon">❌</div>
+                <h4>Video Analysis Failed</h4>
+                <p>${errorMessage}</p>
+                <p class="error-subtitle">The metadata analysis above is still valid and complete.</p>
+            </div>
+        `;
+        
+        // Update status to show error
+        this.updateVideoAnalysisDisplay({
+            progress: 0,
+            message: 'Video analysis failed'
+        });
+        
+        console.error('❌ Video analysis failed:', errorMessage);
     }
 // Additional methods for enhanced progress tracking
 // These should be added to the TumiLabsAnalyzer class

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const TikTokService = require('../services/TikTokService');
+const VideoAnalysisService = require('../services/VideoAnalysisService');
 
 router.post('/analyze', async (req, res) => {
     console.log('📥 Received analyze request');
@@ -27,10 +28,36 @@ router.post('/analyze', async (req, res) => {
             videosAnalyzed: result.allVideosAnalyzed?.length || 0,
             analysisType: result.criteria?.analysisType || 'comprehensive_metadata'
         });
+
+        // Start video analysis asynchronously (non-blocking)
+        let videoAnalysisJob = null;
+        if (result.allVideosAnalyzed && result.allVideosAnalyzed.length > 0) {
+            try {
+                console.log('🎬 Starting background video analysis...');
+                const videoJobResult = await VideoAnalysisService.startVideoAnalysis(
+                    result.allVideosAnalyzed, 
+                    username
+                );
+                videoAnalysisJob = {
+                    jobId: videoJobResult.jobId,
+                    status: videoJobResult.status,
+                    message: 'Video analysis started in background'
+                };
+                console.log(`🎬 Video analysis job started: ${videoJobResult.jobId}`);
+            } catch (videoError) {
+                console.error('❌ Failed to start video analysis:', videoError);
+                // Don't fail the main response, just log the error
+                videoAnalysisJob = {
+                    error: 'Failed to start video analysis',
+                    message: videoError.message
+                };
+            }
+        }
         
         res.json({
             success: true,
             data: result,
+            videoAnalysis: videoAnalysisJob,
             message: `Analysis completed for @${username}`
         });
         
