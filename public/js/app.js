@@ -81,12 +81,18 @@ class TumiLabsAnalyzer {
             } else {
                 console.error('❌ Analysis failed:', error);
                 
-                // Only show retry option for true failures, not for fallbacks that worked
+                // Show specific error messages based on the type of failure
                 if (error.message.includes('timeout') || error.message.includes('network') || error.message.includes('ECONNREFUSED')) {
                     this.updateProgress(27, 'Connection failed. Please try again.', 'step-scraping');
                     this.hideCancelButton();
                     this.showRetryButton();
                     this.showNotification('Connection failed. Click "Try Again" to retry.', 'error');
+                } else if (error.message.includes('No videos found')) {
+                    this.showNotification(`Analysis failed: ${error.message}`, 'error');
+                    this.resetToInitialView();
+                } else if (error.message.includes('Insufficient analyzable content')) {
+                    this.showNotification(`Analysis failed: ${error.message}`, 'error');
+                    this.resetToInitialView();
                 } else {
                     this.showNotification(`Analysis failed: ${error.message}`, 'error');
                     this.resetToInitialView();
@@ -199,21 +205,8 @@ class TumiLabsAnalyzer {
                 this.progressInterval = null;
             }
             
-            console.log('🔄 All API attempts failed. Falling back to comprehensive mock data...');
-            
-            // Show user-friendly fallback message but continue process
-            this.updateProgress(27, 'Connection issues detected. Using demo data...', 'step-scraping');
-            await this.delay(1000);
-            
-            // Enhanced mock data progress with clear messaging
-            this.updateProgress(28, 'Generating comprehensive demo analysis...', 'step-scraping');
-            await this.delay(800);
-            
-            this.updateProgress(29, 'Processing demo videos...', 'step-scraping');
-            await this.delay(600);
-            
-            console.log('✅ Mock data generation successful');
-            return this.getMockTikTokData(username);
+            // Throw the error instead of using mock data
+            throw error;
         }
     }
 
@@ -295,8 +288,8 @@ class TumiLabsAnalyzer {
                     continue; // Try again
                 }
                 
-                // All retries failed - throw the error to trigger fallback
-                console.error(`❌ All ${maxRetries + 1} attempts failed. Falling back to mock data.`);
+                // All retries failed - throw the error
+                console.error(`❌ All ${maxRetries + 1} attempts failed.`);
                 throw error;
             }
         }
@@ -327,92 +320,6 @@ class TumiLabsAnalyzer {
         }, 3000); // Update every 3 seconds
     }
 
-    getMockTikTokData(username) {
-        console.log('🔄 Using mock data for demonstration');
-        
-        return {
-            username,
-            totalVideos: 45,
-            recentVideos: 23,
-            allVideosAnalyzed: [
-                {
-                    rank: 1,
-                    id: 'v1',
-                    url: `https://tiktok.com/@${username}/video/1`,
-                    description: 'Sample video content with hashtags #trending #content #example #demo',
-                    hashtags: ['trending', 'content', 'example', 'demo'],
-                    views: 2500000,
-                    likes: 340000,
-                    comments: 12500,
-                    shares: 8900,
-                    engagementRate: 14.48,
-                    duration: 45,
-                    createTime: '2024-01-15T14:30:00Z',
-                    coverUrl: 'https://via.placeholder.com/300x400/FF6B35/ffffff?text=Video+1'
-                },
-                {
-                    rank: 2,
-                    id: 'v2',
-                    url: `https://tiktok.com/@${username}/video/2`,
-                    description: 'Video content featuring popular topics and engagement #popular #video #social #media',
-                    hashtags: ['popular', 'video', 'social', 'media'],
-                    views: 1800000,
-                    likes: 245000,
-                    comments: 8900,
-                    shares: 5600,
-                    engagementRate: 14.42,
-                    duration: 38,
-                    createTime: '2024-01-12T09:15:00Z',
-                    coverUrl: 'https://via.placeholder.com/300x400/F7931E/ffffff?text=Video+2'
-                },
-                {
-                    rank: 3,
-                    id: 'v3',
-                    url: `https://tiktok.com/@${username}/video/3`,
-                    description: 'Creative content showcasing daily activities and lifestyle #lifestyle #daily #creative #routine',
-                    hashtags: ['lifestyle', 'daily', 'creative', 'routine'],
-                    views: 1200000,
-                    likes: 156000,
-                    comments: 4200,
-                    shares: 3100,
-                    engagementRate: 13.61,
-                    duration: 52,
-                    createTime: '2024-01-10T07:45:00Z',
-                    coverUrl: 'https://via.placeholder.com/300x400/FFE66D/ffffff?text=Video+3'
-                },
-                {
-                    rank: 4,
-                    id: 'v4',
-                    url: `https://tiktok.com/@${username}/video/4`,
-                    description: 'Engaging video content with entertainment focus and trending hashtags #entertainment #trending #fun #viral',
-                    hashtags: ['entertainment', 'trending', 'fun', 'viral'],
-                    views: 950000,
-                    likes: 118000,
-                    comments: 3800,
-                    shares: 2200,
-                    engagementRate: 13.05,
-                    duration: 41,
-                    createTime: '2024-01-08T16:20:00Z',
-                    coverUrl: 'https://via.placeholder.com/300x400/28A745/ffffff?text=Video+4'
-                },
-                {
-                    rank: 5,
-                    id: 'v5',
-                    url: `https://tiktok.com/@${username}/video/5`,
-                    description: 'Educational content sharing knowledge and insights #educational #knowledge #tips #learning',
-                    hashtags: ['educational', 'knowledge', 'tips', 'learning'],
-                    views: 780000,
-                    likes: 95000,
-                    comments: 2800,
-                    shares: 1900,
-                    engagementRate: 12.78,
-                    duration: 36,
-                    createTime: '2024-01-05T11:30:00Z',
-                    coverUrl: 'https://via.placeholder.com/300x400/DC3545/ffffff?text=Video+5'
-                }
-            ]
-        };
-    }
 
     selectTopVideos(data) {
         return data.allVideosAnalyzed || data.topVideos || [];
@@ -446,92 +353,10 @@ class TumiLabsAnalyzer {
             
         } catch (error) {
             console.error('Analysis API error:', error);
-            
-            // Simplified mock analysis progress
-            this.updateProgress(60, 'Processing mock analysis...', 'step-analyzing');
-            await this.delay(800);
-            this.updateProgress(65, 'Calculating insights...', 'step-analyzing');
-            await this.delay(600);
-            this.updateProgress(70, 'Finalizing patterns...', 'step-analyzing');
-            await this.delay(500);
-            return this.getMockAnalysisData(videos);
+            throw error;
         }
     }
 
-    getMockAnalysisData(videos) {
-        console.log('🔄 Using mock analysis data for demonstration');
-        
-        return {
-            videoAnalyses: videos.map((video, index) => ({
-                videoId: video.id,
-                rank: video.rank,
-                basicMetrics: {
-                    views: video.views,
-                    likes: video.likes,
-                    comments: video.comments,
-                    shares: video.shares,
-                    engagementRate: video.engagementRate,
-                    duration: video.duration
-                },
-                metadataAnalysis: {
-                    captionAnalysis: {
-                        wordCount: video.description.split(' ').length,
-                        hasCallToAction: /link|bio|follow/i.test(video.description),
-                        hasEmojis: /[😻🐕💪⚡🏥]/u.test(video.description),
-                        sentiment: 'positive'
-                    },
-                    hashtagAnalysis: {
-                        count: video.hashtags.length,
-                        hashtags: video.hashtags,
-                        avgEngagement: video.engagementRate
-                    },
-                    timingAnalysis: {
-                        dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'][index],
-                        hour: [14, 9, 7, 16, 11][index],
-                        isWeekend: false,
-                        timeCategory: ['afternoon', 'morning', 'morning', 'afternoon', 'morning'][index]
-                    }
-                },
-                analysisComplete: true
-            })),
-            insights: {
-                performance: {
-                    avgEngagementRate: '13.67',
-                    topPerformer: videos[0],
-                    avgViews: 1446000
-                },
-                hashtags: {
-                    avgHashtagCount: '4.2',
-                    distribution: { low: 1, medium: 3, high: 1 }
-                },
-                captions: {
-                    optimalLength: 18,
-                    distribution: { short: 2, medium: 2, long: 1 }
-                },
-                timing: {
-                    optimalTime: 'Morning (7-11 AM)',
-                    bestDays: ['Tuesday', 'Wednesday', 'Thursday']
-                }
-            },
-            summary: {
-                title: "TikTok Performance Analytics - Executive Summary",
-                keyFindings: [
-                    "Top performing videos averaged 13.67% engagement rate (industry average: 5.96%)",
-                    "Average hashtag count: 4.2 per video",
-                    "Most successful upload time: Morning (7-11 AM)",
-                    "Caption length optimization: 18 words average"
-                ],
-                recommendations: [
-                    "Optimize posting timing based on successful patterns",
-                    "Maintain consistent hashtag strategy",
-                    "Focus on caption length optimization",
-                    "Monitor engagement rate patterns for improvements"
-                ],
-                generatedAt: new Date().toISOString(),
-                analysisQuality: "high"
-            }
-        };
-    }
 
     showResults(username, analysisData) {
         this.currentAnalysis = { username, ...analysisData };

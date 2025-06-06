@@ -38,8 +38,8 @@ class TikTokService {
             console.log(`📊 Retrieved ${items?.length || 0} items from dataset`);
 
             if (!items || items.length === 0) {
-                console.log(`⚠️ No videos found for @${username}, using mock data`);
-                return this.getMockProfileData(username);
+                console.log(`❌ No videos found for @${username}`);
+                throw new Error(`No videos found for @${username}. The account may be private, inactive, or does not exist.`);
             }
 
             console.log(`📊 Found ${items.length} videos, implementing smart time window analysis`);
@@ -50,12 +50,7 @@ class TikTokService {
             
             if (analysisResult.requiresFallback) {
                 console.log('📊 Professional Analysis: No sufficient recent content found');
-                const mockData = this.getMockProfileData(username);
-                mockData.realDataAttempted = true;
-                mockData.totalVideosFound = items.length;
-                mockData.professionalNote = analysisResult.professionalMessage;
-                mockData.accountStatus = analysisResult.accountStatus;
-                return mockData;
+                throw new Error(`Insufficient analyzable content for @${username}. ${analysisResult.professionalMessage}`);
             }
             
             return {
@@ -82,106 +77,13 @@ class TikTokService {
         } catch (error) {
             console.error('❌ TikTok scraping error:', error);
             console.error('❌ Error details:', error.message);
-            console.log('🔄 Falling back to mock data due to error');
             
-            // Return mock data instead of throwing error
-            return this.getMockProfileData(username);
+            // Throw the error instead of falling back to mock data
+            throw new Error(`Failed to analyze @${username}: ${error.message}`);
         }
     }
 
-    getMockProfileData(username) {
-        console.log(`🎭 Generating comprehensive mock data for @${username} - 23 videos from past 60 days`);
-        
-        return {
-            username,
-            totalVideos: 45,
-            recentVideos: 23,
-            allVideosAnalyzed: this.generateComprehensiveMockVideos(username, 23),
-            analysisDate: new Date().toISOString(),
-            criteria: {
-                minViews: this.minViews,
-                daysPeriod: this.analysisDays,
-                analysisType: 'comprehensive_metadata'
-            },
-            dataSource: 'mock'
-        };
-    }
 
-    generateComprehensiveMockVideos(username, count) {
-        const videos = [];
-        const contentTypes = [
-            { type: 'trending', hashtags: ['trending', 'viral', 'fyp', 'popular'], baseViews: 2000000, captionLength: 'short' },
-            { type: 'educational', hashtags: ['educational', 'tips', 'learning', 'howto'], baseViews: 800000, captionLength: 'long' },
-            { type: 'entertainment', hashtags: ['funny', 'entertainment', 'comedy', 'fun'], baseViews: 1500000, captionLength: 'short' },
-            { type: 'lifestyle', hashtags: ['lifestyle', 'daily', 'routine', 'life'], baseViews: 900000, captionLength: 'medium' },
-            { type: 'product', hashtags: ['product', 'review', 'unboxing', 'demo'], baseViews: 600000, captionLength: 'extended' },
-            { type: 'behind_scenes', hashtags: ['bts', 'behindthescenes', 'process', 'making'], baseViews: 700000, captionLength: 'medium' },
-            { type: 'story', hashtags: ['story', 'storytime', 'experience', 'life'], baseViews: 1100000, captionLength: 'long' },
-            { type: 'tutorial', hashtags: ['tutorial', 'diy', 'stepbystep', 'guide'], baseViews: 850000, captionLength: 'extended' }
-        ];
-
-        // Define duration buckets with realistic distribution
-        const durationBuckets = [
-            { range: '15s and under', min: 8, max: 15, weight: 0.15, avgEngagement: 18.2 }, // 15% short, highest engagement
-            { range: '16-30s', min: 16, max: 30, weight: 0.45, avgEngagement: 16.6 }, // 45% medium-short
-            { range: '31-60s', min: 31, max: 60, weight: 0.35, avgEngagement: 17.92 }, // 35% medium-long, second highest
-            { range: '60s+', min: 61, max: 120, weight: 0.05, avgEngagement: 15.4 } // 5% long, lowest engagement
-        ];
-
-        for (let i = 1; i <= count; i++) {
-            const contentType = contentTypes[Math.floor(Math.random() * contentTypes.length)];
-            const daysAgo = Math.floor(Math.random() * 60); // Past 60 days
-            const createDate = new Date();
-            createDate.setDate(createDate.getDate() - daysAgo);
-            
-            // Select duration based on weighted distribution
-            const rand = Math.random();
-            let cumWeight = 0;
-            let selectedBucket = durationBuckets[1]; // default to 16-30s
-            for (const bucket of durationBuckets) {
-                cumWeight += bucket.weight;
-                if (rand <= cumWeight) {
-                    selectedBucket = bucket;
-                    break;
-                }
-            }
-            const duration = selectedBucket.min + Math.floor(Math.random() * (selectedBucket.max - selectedBucket.min + 1));
-            
-            // Generate caption based on content type
-            const captionTemplates = {
-                'short': [`${contentType.type} vibes! #${contentType.hashtags.join(' #')}`],
-                'medium': [`Check out this amazing ${contentType.type} content I created! What do you think? #${contentType.hashtags.join(' #')}`],
-                'long': [`Hey everyone! I'm so excited to share this ${contentType.type} content with you all. It took me hours to create and I really hope you enjoy it as much as I enjoyed making it! Let me know your thoughts in the comments below! #${contentType.hashtags.join(' #')}`],
-                'extended': [`Welcome back to my channel! Today I wanted to dive deep into ${contentType.type} content and share some insights I've learned over the years. This has been a passion project of mine and I've put countless hours into perfecting this approach. I genuinely believe this will help so many of you who are struggling with the same challenges I faced when I started. Make sure to save this post and share it with anyone who might benefit from these tips! Your support means the world to me and keeps me motivated to create more content like this! #${contentType.hashtags.join(' #')}`]
-            };
-            
-            const description = captionTemplates[contentType.captionLength][0];
-            
-            const views = contentType.baseViews + Math.floor(Math.random() * 1000000);
-            const likes = Math.floor(views * (0.08 + Math.random() * 0.12)); // 8-20% like rate
-            const comments = Math.floor(views * (0.005 + Math.random() * 0.015)); // 0.5-2% comment rate  
-            const shares = Math.floor(views * (0.002 + Math.random() * 0.008)); // 0.2-1% share rate
-            const engagementRate = parseFloat(((likes + comments + shares) / views * 100).toFixed(2));
-
-            videos.push({
-                rank: i,
-                id: `mock_v${i}`,
-                url: `https://tiktok.com/@${username}/video/${i}`,
-                description: description,
-                hashtags: contentType.hashtags,
-                views: views,
-                likes: likes,
-                comments: comments,
-                shares: shares,
-                engagementRate: engagementRate,
-                duration: duration,
-                createTime: createDate.toISOString(),
-                coverUrl: null
-            });
-        }
-
-        return videos.sort((a, b) => b.engagementRate - a.engagementRate);
-    }
 
     performSmartTimeWindowAnalysis(videos, username) {
         console.log('🎯 Initiating Smart Time Window Analysis - Enterprise Intelligence Mode');
