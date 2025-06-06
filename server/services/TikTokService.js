@@ -29,18 +29,18 @@ class TikTokService {
                 }
             };
 
-            console.log('🚀 Calling Apify actor with input:', input);
+            console.log('🚀 Starting Apify actor with input:', input);
             
-            // Add timeout to Apify actor call (120 seconds)
-            const run = await this.client.actor(this.actorId).call(input, {
-                timeout: 120000 // 2 minutes timeout
-            });
-            console.log('📋 Apify run completed:', run.id);
+            // Start the actor run (no timeout - we'll poll for status)
+            const run = await this.client.actor(this.actorId).start(input);
+            console.log('📋 Apify run started:', run.id);
             
-            // Add timeout to dataset retrieval (60 seconds)
-            const { items } = await this.client.dataset(run.defaultDatasetId).listItems({
-                timeout: 60000 // 1 minute timeout
-            });
+            // Poll for completion with proper status checking
+            const completedRun = await this.pollApifyRunUntilComplete(run.id);
+            console.log('📋 Apify run completed:', completedRun.id);
+            
+            // Retrieve dataset with extended timeout
+            const { items } = await this.client.dataset(completedRun.defaultDatasetId).listItems();
             console.log(`📊 Retrieved ${items?.length || 0} items from dataset`);
 
             if (!items || items.length === 0) {
@@ -89,7 +89,41 @@ class TikTokService {
         }
     }
 
-
+    async pollApifyRunUntilComplete(runId, maxWaitTime = 300000) { // 5 minutes max
+        const startTime = Date.now();
+        const pollInterval = 5000; // Check every 5 seconds
+        
+        console.log(`🔄 Polling Apify run ${runId} for completion...`);
+        
+        while (Date.now() - startTime < maxWaitTime) {
+            try {
+                const run = await this.client.run(runId).get();
+                console.log(`📊 Run status: ${run.status}`);
+                
+                if (run.status === 'SUCCEEDED') {
+                    console.log(`✅ Apify run completed successfully after ${Math.round((Date.now() - startTime) / 1000)}s`);
+                    return run;
+                } else if (run.status === 'FAILED' || run.status === 'ABORTED') {
+                    throw new Error(`Apify run ${run.status.toLowerCase()}: ${run.statusMessage || 'Unknown error'}`);
+                } else if (run.status === 'RUNNING' || run.status === 'READY') {
+                    // Still processing, wait and check again
+                    console.log(`⏳ Run still processing (${run.status}), checking again in ${pollInterval/1000}s...`);
+                    await new Promise(resolve => setTimeout(resolve, pollInterval));
+                } else {
+                    console.log(`⚠️ Unexpected run status: ${run.status}, continuing to poll...`);
+                    await new Promise(resolve => setTimeout(resolve, pollInterval));
+                }
+            } catch (error) {
+                if (error.message.includes('run') && error.message.includes('failed')) {
+                    throw error; // Re-throw actual run failures
+                }
+                console.error(`❌ Error polling run status: ${error.message}, retrying...`);
+                await new Promise(resolve => setTimeout(resolve, pollInterval));
+            }
+        }
+        
+        throw new Error(`Apify run timeout: Analysis took longer than ${maxWaitTime/1000} seconds`);
+    }
 
     performSmartTimeWindowAnalysis(videos, username) {
         console.log('🎯 Initiating Smart Time Window Analysis - Enterprise Intelligence Mode');

@@ -212,7 +212,7 @@ class TumiLabsAnalyzer {
 
     async fetchWithProgressAndTimeout(username) {
         const maxRetries = 2;
-        const timeoutMs = 60000; // 60 second timeout per attempt
+        const timeoutMs = 300000; // 5 minute timeout for real TikTok analysis
         
         for (let retryCount = 0; retryCount <= maxRetries; retryCount++) {
             try {
@@ -279,9 +279,16 @@ class TumiLabsAnalyzer {
                 // If this is not the last attempt, show retry message and wait
                 if (retryCount < maxRetries) {
                     const retryDelay = (retryCount + 1) * 1000; // 1s, 2s delays
-                    this.updateProgress(27, `Processing video metadata... (attempt ${retryCount + 2}/${maxRetries + 1})`, 'step-scraping');
+                    // Show confident messaging without retry counters
+                    const confidentMessages = [
+                        'Deep analysis in progress...',
+                        'Building comprehensive insights...',
+                        'Finalizing engagement analysis...'
+                    ];
+                    console.log(`🔄 Retry attempt ${retryCount + 2}/${maxRetries + 1} - internal logging only`);
+                    this.updateProgress(27, confidentMessages[retryCount] || 'Processing comprehensive analysis...', 'step-scraping');
                     await this.delay(retryDelay);
-                    this.updateProgress(27, `Analyzing video data... (attempt ${retryCount + 2}/${maxRetries + 1})`, 'step-scraping');
+                    this.updateProgress(27, 'Optimizing data quality...', 'step-scraping');
                     continue; // Try again
                 }
                 
@@ -295,13 +302,16 @@ class TumiLabsAnalyzer {
     startApiProgressFeedback() {
         let progressStep = 27;
         const messages = [
-            'Analyzing video metadata...',
-            'Detecting trends and performance patterns...',
-            'Processing engagement analytics...',
-            'Extracting content intelligence...',
-            'Calculating performance metrics...',
-            'Finalizing data analysis...',
-            'Preparing your custom report...'
+            'Deep analysis in progress...',
+            'Uncovering engagement patterns...',
+            'Building comprehensive insights...',
+            'Analyzing audience behavior...',
+            'Extracting performance intelligence...',
+            'Processing content strategy data...',
+            'Generating competitive insights...',
+            'Finalizing your personalized report...',
+            'Optimizing analysis quality...',
+            'Almost ready with your insights...'
         ];
         let messageIndex = 0;
         
@@ -1099,39 +1109,6 @@ async simulateDataCollectionProgress(phases) {
     }
 }
 
-async simulateMockDataProgress(username) {
-    const videoCount = 23; // Mock video count
-    const basePercent = 30;
-    const endPercent = 55;
-    const progressPerVideo = (endPercent - basePercent) / videoCount;
-    
-    this.updateProgress(30, 'Generating comprehensive mock data...', 'step-scraping');
-    await this.delay(800);
-    
-    for (let i = 1; i <= videoCount; i++) {
-        const currentPercent = Math.floor(basePercent + (i * progressPerVideo));
-        const message = `Processing video ${i} of ${videoCount}...`;
-        this.updateProgress(currentPercent, message, 'step-scraping');
-        
-        // Faster simulation for demo (200-500ms per video)
-        await this.delay(200 + Math.random() * 300);
-    }
-}
-
-async simulateMockAnalysisProgress(videos) {
-    const phases = [
-        { percent: 80, message: 'Analyzing engagement patterns...', delay: 800 },
-        { percent: 82, message: 'Calculating performance metrics...', delay: 600 },
-        { percent: 84, message: 'Processing hashtag intelligence...', delay: 700 },
-        { percent: 86, message: 'Analyzing posting behavior...', delay: 500 },
-        { percent: 88, message: 'Generating strategic insights...', delay: 600 }
-    ];
-    
-    for (const phase of phases) {
-        this.updateProgress(phase.percent, phase.message, 'step-analyzing');
-        await this.delay(phase.delay);
-    }
-}
 }
 
 const analyzer = new TumiLabsAnalyzer();
