@@ -83,10 +83,10 @@ class TumiLabsAnalyzer {
                 
                 // Show specific error messages based on the type of failure
                 if (error.message.includes('timeout') || error.message.includes('network') || error.message.includes('ECONNREFUSED')) {
-                    this.updateProgress(27, 'Connection failed. Please try again.', 'step-scraping');
+                    this.updateProgress(27, 'TikTok data temporarily unavailable', 'step-scraping');
                     this.hideCancelButton();
                     this.showRetryButton();
-                    this.showNotification('Connection failed. Click "Try Again" to retry.', 'error');
+                    this.showNotification('TikTok data unavailable. Click "Try Again" to retry.', 'error');
                 } else if (error.message.includes('No videos found')) {
                     this.showNotification(`Analysis failed: ${error.message}`, 'error');
                     this.resetToInitialView();
@@ -107,10 +107,10 @@ class TumiLabsAnalyzer {
             this.updateProgress(0, 'Initializing Analysis...', 'step-scraping');
             this.activateStep('step-scraping');
             
-            await this.delay(800);
+            await this.delay(300);
             this.updateProgress(10, 'Connecting to TikTok via Apify...', 'step-scraping');
             
-            await this.delay(500);
+            await this.delay(200);
             this.updateProgress(20, 'Establishing data connection...', 'step-scraping');
             
             // Enhanced data collection with proper progress synchronization
@@ -125,15 +125,15 @@ class TumiLabsAnalyzer {
             this.activateStep('step-selecting');
             this.updateProgress(35, 'Processing video metadata...', 'step-selecting');
             
-            await this.delay(600);
+            await this.delay(200);
             this.updateProgress(40, 'Filtering qualifying videos...', 'step-selecting');
             
             const topVideos = this.selectTopVideos(scrapingResult);
             
-            await this.delay(500);
+            await this.delay(150);
             this.updateProgress(45, 'Analyzing video performance...', 'step-selecting');
             
-            await this.delay(800);
+            await this.delay(250);
             this.updateProgress(50, 'Video processing complete', 'step-selecting');
             this.completeStep('step-selecting');
             await this.delay(300);
@@ -152,10 +152,10 @@ class TumiLabsAnalyzer {
             this.activateStep('step-reporting');
             this.updateProgress(80, 'Generating comprehensive report...', 'step-reporting');
             
-            await this.delay(800);
+            await this.delay(300);
             this.updateProgress(85, 'Finalizing analytics dashboard...', 'step-reporting');
             
-            await this.delay(600);
+            await this.delay(200);
             this.updateProgress(90, 'Report generation complete', 'step-reporting');
             
             await this.delay(400);
@@ -181,10 +181,10 @@ class TumiLabsAnalyzer {
         try {
             // Micro-progress updates for better UX (22% → 30%)
             this.updateProgress(22, 'Scraping TikTok videos...', 'step-scraping');
-            await this.delay(600);
+            await this.delay(200);
             
             this.updateProgress(25, 'Connecting to TikTok API...', 'step-scraping');
-            await this.delay(400);
+            await this.delay(150);
             
             this.updateProgress(27, 'Downloading video metadata...', 'step-scraping');
             console.log('🌐 Making API request to /api/tiktok/analyze...');
@@ -212,7 +212,7 @@ class TumiLabsAnalyzer {
 
     async fetchWithProgressAndTimeout(username) {
         const maxRetries = 2;
-        const timeoutMs = 90000; // 90 second timeout per attempt (increased for TikTok API)
+        const timeoutMs = 60000; // 60 second timeout per attempt
         
         for (let retryCount = 0; retryCount <= maxRetries; retryCount++) {
             try {
@@ -278,18 +278,16 @@ class TumiLabsAnalyzer {
                 
                 // If this is not the last attempt, show retry message and wait
                 if (retryCount < maxRetries) {
-                    const retryDelay = (retryCount + 1) * 2000; // 2s, 4s delays
-                    this.updateProgress(27, `Connection issue detected. Retrying in ${retryDelay/1000}s... (${retryCount + 1}/${maxRetries})`, 'step-scraping');
+                    const retryDelay = (retryCount + 1) * 1000; // 1s, 2s delays
+                    this.updateProgress(27, `Processing video metadata... (attempt ${retryCount + 2}/${maxRetries + 1})`, 'step-scraping');
                     await this.delay(retryDelay);
-                    this.updateProgress(27, `Attempting reconnection... (${retryCount + 2}/${maxRetries + 1})`, 'step-scraping');
+                    this.updateProgress(27, `Analyzing video data... (attempt ${retryCount + 2}/${maxRetries + 1})`, 'step-scraping');
                     continue; // Try again
                 }
                 
-                // All retries failed - use simulation fallback
+                // All retries failed - throw the error
                 console.error(`❌ All ${maxRetries + 1} attempts failed.`);
-                console.log('🎭 Activating simulation mode to complete user experience...');
-                
-                return await this.simulateSuccessfulAnalysis(username);
+                throw error;
             }
         }
     }
@@ -297,13 +295,13 @@ class TumiLabsAnalyzer {
     startApiProgressFeedback() {
         let progressStep = 27;
         const messages = [
-            'Downloading video metadata...',
-            'This may take up to 2 minutes...',
-            'Processing video information...',
-            'TikTok API can be slow, please wait...',
-            'Extracting engagement data...',
-            'Analyzing content patterns...',
-            'Almost ready...'
+            'Analyzing video metadata...',
+            'Detecting trends and performance patterns...',
+            'Processing engagement analytics...',
+            'Extracting content intelligence...',
+            'Calculating performance metrics...',
+            'Finalizing data analysis...',
+            'Preparing your custom report...'
         ];
         let messageIndex = 0;
         
@@ -317,7 +315,7 @@ class TumiLabsAnalyzer {
                     messageIndex++;
                 }
             }
-        }, 3000); // Update every 3 seconds
+        }, 2000); // Update every 2 seconds
     }
 
 
@@ -329,7 +327,7 @@ class TumiLabsAnalyzer {
         try {
             // Intelligence Analysis Phase (55% → 70%)
             this.updateProgress(60, 'Analyzing engagement patterns...', 'step-analyzing');
-            await this.delay(600);
+            await this.delay(200);
             
             this.updateProgress(65, 'Processing intelligence metrics...', 'step-analyzing');
             
@@ -342,11 +340,10 @@ class TumiLabsAnalyzer {
             });
 
             this.updateProgress(70, 'Finalizing insights...', 'step-analyzing');
-            await this.delay(500);
+            await this.delay(150);
             
             if (!response.ok) {
-                console.log('⚠️ Analysis API failed, generating simulation analysis...');
-                return this.generateSimulationAnalysis(videos);
+                throw new Error(`Analysis failed: ${response.status}`);
             }
 
             const result = await response.json();
@@ -354,75 +351,10 @@ class TumiLabsAnalyzer {
             
         } catch (error) {
             console.error('Analysis API error:', error);
-            console.log('🎭 Fallback to simulation analysis...');
-            return this.generateSimulationAnalysis(videos);
+            throw error;
         }
     }
 
-    generateSimulationAnalysis(videos) {
-        console.log('🎭 Generating simulation analysis for', videos.length, 'videos');
-        
-        return {
-            videoAnalyses: videos.map((video, index) => ({
-                videoId: video.id,
-                rank: video.rank,
-                basicMetrics: {
-                    views: video.views,
-                    likes: video.likes,
-                    comments: video.comments,
-                    shares: video.shares,
-                    engagementRate: video.engagementRate,
-                    duration: video.duration
-                },
-                metadataAnalysis: {
-                    hashtagAnalysis: {
-                        count: video.hashtags.length,
-                        hashtags: video.hashtags,
-                        avgEngagement: video.engagementRate
-                    },
-                    timingAnalysis: {
-                        dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][index % 7],
-                        hour: [9, 14, 16, 11, 7, 13, 18][index % 7],
-                        isWeekend: index % 7 >= 5,
-                        timeCategory: ['morning', 'afternoon', 'afternoon', 'morning', 'morning', 'afternoon', 'evening'][index % 7]
-                    }
-                },
-                analysisComplete: true
-            })),
-            insights: {
-                performance: {
-                    avgEngagementRate: (videos.reduce((sum, v) => sum + v.engagementRate, 0) / videos.length).toFixed(2),
-                    topPerformer: videos[0],
-                    avgViews: Math.round(videos.reduce((sum, v) => sum + v.views, 0) / videos.length)
-                },
-                hashtags: {
-                    avgHashtagCount: (videos.reduce((sum, v) => sum + v.hashtags.length, 0) / videos.length).toFixed(1),
-                    distribution: { low: 3, medium: 7, high: 5 }
-                },
-                timing: {
-                    optimalTime: 'Afternoon (1-4 PM)',
-                    bestDays: ['Tuesday', 'Wednesday', 'Thursday']
-                }
-            },
-            summary: {
-                title: "TikTok Performance Analytics - Demo Report",
-                keyFindings: [
-                    `Average engagement rate: ${(videos.reduce((sum, v) => sum + v.engagementRate, 0) / videos.length).toFixed(2)}%`,
-                    `Top performing content: ${videos[0]?.hashtags[0] || 'trending'} category`,
-                    "Optimal posting window: Weekday afternoons",
-                    `Analyzed ${videos.length} videos with comprehensive metrics`
-                ],
-                recommendations: [
-                    "Maintain consistent posting schedule during peak hours",
-                    "Focus on high-engagement content themes",
-                    "Optimize hashtag strategy for better discoverability",
-                    "Monitor performance trends for continuous improvement"
-                ],
-                generatedAt: new Date().toISOString(),
-                analysisQuality: "demo_simulation"
-            }
-        };
-    }
 
     showResults(username, analysisData) {
         this.currentAnalysis = { username, ...analysisData };
@@ -440,12 +372,10 @@ class TumiLabsAnalyzer {
     populateResults(username, data) {
         const videoCount = data.videoAnalyses ? data.videoAnalyses.length : 0;
         
-        // Check if this is historical analysis, simulation mode, or regular analysis
+        // Check if this is historical analysis and update header accordingly
         let headerText = `Comprehensive Analysis for @${username} (${videoCount} videos)`;
         if (data.isHistoricalAnalysis && data.historicalPeriod) {
             headerText = `Historical Analysis for @${username} (${videoCount} videos)`;
-        } else if (data.simulationMode || data.dataSource === 'simulation') {
-            headerText = `Demo Analysis for @${username} (${videoCount} videos) - Simulation Mode`;
         }
         document.getElementById('analysis-username').textContent = headerText;
         
@@ -973,128 +903,6 @@ class TumiLabsAnalyzer {
             this.progressInterval = null;
             console.log('🧹 Progress interval cleared');
         }
-    }
-
-    async simulateSuccessfulAnalysis(username) {
-        console.log(`🎭 Simulating successful analysis for @${username}`);
-        
-        // Show user-friendly message about simulation
-        this.updateProgress(27, 'Connection issues detected. Generating demo analysis...', 'step-scraping');
-        await this.delay(1000);
-        
-        this.updateProgress(28, 'Building simulated data model...', 'step-scraping');
-        await this.delay(800);
-        
-        this.updateProgress(29, 'Processing demo content...', 'step-scraping');
-        await this.delay(600);
-        
-        // Generate realistic demo data
-        const simulatedData = {
-            username,
-            totalVideos: 47,
-            recentVideos: 25,
-            allVideosAnalyzed: this.generateDemoVideos(username, 25),
-            analysisDate: new Date().toISOString(),
-            analysisWindow: 'Demo Analysis - Recent Content Patterns (last 30 days)',
-            contentRecency: {
-                status: 'RECENT',
-                insight: 'Content represents current strategy and trends',
-                latestPostDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-                daysAgo: 3,
-                latestPostRelative: '3 days ago'
-            },
-            postingFrequency: {
-                postsPerWeek: 4.2,
-                description: '4-7 posts per week (High frequency)',
-                insight: 'Consistent high-frequency posting schedule',
-                totalPosts: 25,
-                windowDays: 30
-            },
-            professionalInsight: `Demo analysis shows @${username} maintains strong content strategy with consistent posting patterns and engaging content mix.`,
-            criteria: {
-                minViews: 500,
-                daysPeriod: 30,
-                analysisType: 'comprehensive_metadata_demo',
-                timeWindowUsed: 'Demo Content Analysis'
-            },
-            dataSource: 'simulation',
-            simulationMode: true
-        };
-        
-        console.log('✅ Demo data generated successfully');
-        return simulatedData;
-    }
-
-    generateDemoVideos(username, count) {
-        const videos = [];
-        const contentTypes = [
-            { type: 'trending', hashtags: ['trending', 'viral', 'fyp', 'popular'], baseViews: 1800000, captionLength: 'short' },
-            { type: 'educational', hashtags: ['educational', 'tips', 'learning', 'howto'], baseViews: 650000, captionLength: 'long' },
-            { type: 'entertainment', hashtags: ['funny', 'entertainment', 'comedy', 'fun'], baseViews: 1200000, captionLength: 'short' },
-            { type: 'lifestyle', hashtags: ['lifestyle', 'daily', 'routine', 'life'], baseViews: 850000, captionLength: 'medium' },
-            { type: 'behind_scenes', hashtags: ['bts', 'behindthescenes', 'process', 'making'], baseViews: 750000, captionLength: 'medium' }
-        ];
-
-        // Duration buckets for realistic distribution
-        const durationBuckets = [
-            { range: '15s and under', min: 8, max: 15, weight: 0.15, avgEngagement: 18.2 },
-            { range: '16-30s', min: 16, max: 30, weight: 0.45, avgEngagement: 16.6 },
-            { range: '31-60s', min: 31, max: 60, weight: 0.35, avgEngagement: 17.92 },
-            { range: '60s+', min: 61, max: 120, weight: 0.05, avgEngagement: 15.4 }
-        ];
-
-        for (let i = 1; i <= count; i++) {
-            const contentType = contentTypes[Math.floor(Math.random() * contentTypes.length)];
-            const daysAgo = Math.floor(Math.random() * 30); // Past 30 days
-            const createDate = new Date();
-            createDate.setDate(createDate.getDate() - daysAgo);
-            
-            // Select duration based on weighted distribution
-            const rand = Math.random();
-            let cumWeight = 0;
-            let selectedBucket = durationBuckets[1]; // default to 16-30s
-            for (const bucket of durationBuckets) {
-                cumWeight += bucket.weight;
-                if (rand <= cumWeight) {
-                    selectedBucket = bucket;
-                    break;
-                }
-            }
-            const duration = selectedBucket.min + Math.floor(Math.random() * (selectedBucket.max - selectedBucket.min + 1));
-            
-            // Generate realistic captions
-            const captionTemplates = {
-                'short': [`${contentType.type} vibes! Check this out 🔥 #${contentType.hashtags.join(' #')}`],
-                'medium': [`Amazing ${contentType.type} content that you need to see! What do you think about this? #${contentType.hashtags.join(' #')}`],
-                'long': [`Hey everyone! I'm excited to share this ${contentType.type} content with you. It took me time to create and I hope you enjoy it! Let me know your thoughts in the comments! #${contentType.hashtags.join(' #')}`]
-            };
-            
-            const description = captionTemplates[contentType.captionLength][0];
-            
-            const views = contentType.baseViews + Math.floor(Math.random() * 800000);
-            const likes = Math.floor(views * (0.08 + Math.random() * 0.12)); // 8-20% like rate
-            const comments = Math.floor(views * (0.005 + Math.random() * 0.015)); // 0.5-2% comment rate  
-            const shares = Math.floor(views * (0.002 + Math.random() * 0.008)); // 0.2-1% share rate
-            const engagementRate = parseFloat(((likes + comments + shares) / views * 100).toFixed(2));
-
-            videos.push({
-                rank: i,
-                id: `demo_v${i}`,
-                url: `https://tiktok.com/@${username}/video/${i}`,
-                description: description,
-                hashtags: contentType.hashtags,
-                views: views,
-                likes: likes,
-                comments: comments,
-                shares: shares,
-                engagementRate: engagementRate,
-                duration: duration,
-                createTime: createDate.toISOString(),
-                coverUrl: null
-            });
-        }
-
-        return videos.sort((a, b) => b.engagementRate - a.engagementRate);
     }
 
     activateStep(stepId) {
