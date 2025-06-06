@@ -1,20 +1,31 @@
 {
   "name": "tiktok-competitor-analyzer",
-  "version": "1.0.0",
-  "description": "A web application for analyzing TikTok competitors",
+  "version": "2.0.0",
+  "description": "Intelligent TikTok competitor analysis with AI-powered video insights",
   "main": "src/js/app.js",
   "scripts": {
-    "start": "live-server public --port=3000",
-    "dev": "live-server public --port=3000 --watch=src",
-    "build": "echo 'Build script placeholder'"
+    "start": "node server/server.js",
+    "dev": "nodemon server/server.js",
+    "client": "live-server public --port=3001",
+    "build": "webpack --mode production"
   },
-  "keywords": ["tiktok", "competitor-analysis", "social-media", "analytics"],
+  "keywords": ["tiktok", "competitor-analysis", "ai", "computer-vision", "apify"],
   "author": "TumiLabsJN",
   "license": "MIT",
   "devDependencies": {
-    "live-server": "^1.2.2"
+    "live-server": "^1.2.2",
+    "nodemon": "^3.0.1",
+    "webpack": "^5.88.0",
+    "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "chart.js": "^4.4.0"
+    "apify-client": "^2.7.1",
+    "chart.js": "^4.4.0",
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "axios": "^1.5.0",
+    "moment": "^2.29.4",
+    "jspdf": "^2.5.1"
   }
 }

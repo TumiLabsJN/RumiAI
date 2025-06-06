@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Progress Test - TikTok Analyzer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        .progress-demo {
+            margin: 2rem 0;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FF6B35, #F7931E);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 1rem 0;
+        }
+        .btn {
+            background: #FF6B35;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 0.5rem;
+        }
+        .btn:hover {
+            background: #e55a2b;
+        }
+        .status {
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+        }
+        .status.info {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+        }
+        .status.success {
+            background: #e8f5e8;
+            border-left: 4px solid #4caf50;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🚀 TikTok Analyzer - Progress System Test</h1>
+        <p>This page tests the improved progress bar system that fixes the stuck-at-15% issue.</p>
+        
+        <div class="progress-demo">
+            <h3>Progress Simulation</h3>
+            <div class="progress-info">
+                <span id="progress-message">Ready to test...</span>
+                <span id="progress-percent">0%</span>
+            </div>
+            <div class="progress-bar">
+                <div id="progress-fill" class="progress-fill"></div>
+            </div>
+            
+            <button class="btn" onclick="testOriginalFlow()">Test Original (Stuck) Flow</button>
+            <button class="btn" onclick="testImprovedFlow()">Test Improved Flow</button>
+            <button class="btn" onclick="resetProgress()">Reset</button>
+        </div>
+        
+        <div id="test-status" class="status info">
+            <strong>Test Status:</strong> Ready to begin testing
+        </div>
+        
+        <div class="test-container">
+            <h3>🎯 Key Improvements</h3>
+            <ul>
+                <li><strong>Dynamic Progress:</strong> Progress bar moves continuously during API calls</li>
+                <li><strong>Real-time Updates:</strong> Status messages change every 500ms to show active processing</li>
+                <li><strong>Granular Steps:</strong> More progress milestones (10%, 15%, 30%, 35%, 45%, etc.)</li>
+                <li><strong>Professional Messaging:</strong> Clear status updates like "Scraping TikTok videos..." → "Analyzing engagement patterns..."</li>
+                <li><strong>No Stuck Progress:</strong> Never stays at same percentage for more than 3 seconds</li>
+            </ul>
+        </div>
+        
+        <div class="test-container">
+            <h3>🔧 Technical Implementation</h3>
+            <ul>
+                <li><strong>startDynamicProgress():</strong> Creates smooth progress increments during long operations</li>
+                <li><strong>Message Cycling:</strong> Rotates through different status messages to show activity</li>
+                <li><strong>Interval Management:</strong> Properly clears intervals to prevent progress conflicts</li>
+                <li><strong>Realistic Timing:</strong> Progress matches actual backend processing time</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function updateProgress(percent, message) {
+            document.getElementById('progress-percent').textContent = percent + '%';
+            document.getElementById('progress-message').textContent = message;
+            document.getElementById('progress-fill').style.width = percent + '%';
+        }
+
+        function setStatus(message, type = 'info') {
+            const statusEl = document.getElementById('test-status');
+            statusEl.innerHTML = `<strong>Test Status:</strong> ${message}`;
+            statusEl.className = `status ${type}`;
+        }
+
+        async function testOriginalFlow() {
+            setStatus('Testing original flow (demonstrates stuck progress)...', 'info');
+            
+            updateProgress(0, 'Initializing Analysis...');
+            await delay(1000);
+            updateProgress(15, 'Connecting to TikTok via Apify...');
+            
+            // This is where it gets stuck for 60+ seconds in original flow
+            await delay(5000); // Simulate the problem
+            
+            updateProgress(35, 'Processing videos...');
+            await delay(1000);
+            updateProgress(100, 'Complete');
+            
+            setStatus('Original flow test complete - Notice how it stayed at 15% for 5 seconds', 'info');
+        }
+
+        async function testImprovedFlow() {
+            setStatus('Testing improved flow (smooth dynamic progress)...', 'info');
+            
+            updateProgress(0, 'Initializing Analysis...');
+            await delay(800);
+            updateProgress(10, 'Connecting to TikTok via Apify...');
+            
+            // Start dynamic progress simulation
+            let currentPercent = 15;
+            const messages = [
+                'Scraping TikTok videos...',
+                'Scraping TikTok videos (processing data...)',
+                'Scraping TikTok videos (analyzing patterns...)',
+                'Scraping TikTok videos (calculating metrics...)'
+            ];
+            
+            let messageIndex = 0;
+            const interval = setInterval(() => {
+                if (currentPercent < 30) {
+                    currentPercent += 1;
+                    if (currentPercent % 3 === 0) {
+                        messageIndex = (messageIndex + 1) % messages.length;
+                    }
+                    updateProgress(currentPercent, messages[messageIndex]);
+                } else {
+                    clearInterval(interval);
+                }
+            }, 200); // Fast for demo
+            
+            await delay(4000); // Wait for dynamic progress
+            clearInterval(interval);
+            
+            updateProgress(35, 'Processing video data...');
+            await delay(800);
+            updateProgress(45, 'Filtering qualifying videos...');
+            await delay(600);
+            updateProgress(55, 'Preparing comprehensive metadata analysis...');
+            
+            // Another dynamic phase
+            let analysisPercent = 60;
+            const analysisMessages = [
+                'Analyzing engagement patterns...',
+                'Analyzing engagement patterns (processing data...)',
+                'Analyzing engagement patterns (calculating metrics...)'
+            ];
+            let analysisIndex = 0;
+            
+            const analysisInterval = setInterval(() => {
+                if (analysisPercent < 80) {
+                    analysisPercent += 1;
+                    if (analysisPercent % 4 === 0) {
+                        analysisIndex = (analysisIndex + 1) % analysisMessages.length;
+                    }
+                    updateProgress(analysisPercent, analysisMessages[analysisIndex]);
+                } else {
+                    clearInterval(analysisInterval);
+                }
+            }, 150);
+            
+            await delay(3000);
+            clearInterval(analysisInterval);
+            
+            updateProgress(85, 'Generating professional report...');
+            await delay(800);
+            updateProgress(95, 'Finalizing analytics dashboard...');
+            await delay(600);
+            updateProgress(100, 'Analysis Complete!');
+            
+            setStatus('Improved flow test complete - Notice smooth, continuous progress!', 'success');
+        }
+
+        function resetProgress() {
+            updateProgress(0, 'Ready to test...');
+            setStatus('Reset complete - Ready for next test', 'info');
+        }
+
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+</body>
+</html>

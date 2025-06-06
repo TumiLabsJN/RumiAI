@@ -2,6 +2,8 @@ class TumiLabsAnalyzer {
     constructor() {
         this.currentAnalysis = null;
         this.performanceChart = null;
+        this.abortController = null;
+        this.progressInterval = null;
         this.init();
     }
 
@@ -14,6 +16,8 @@ class TumiLabsAnalyzer {
         const analysisForm = document.getElementById('analysis-form');
         const exportBtn = document.getElementById('export-pdf');
         const newAnalysisBtn = document.getElementById('new-analysis');
+        const cancelBtn = document.getElementById('cancel-analysis');
+        const retryBtn = document.getElementById('retry-analysis');
 
         if (analysisForm) {
             analysisForm.addEventListener('submit', (e) => {
@@ -28,6 +32,14 @@ class TumiLabsAnalyzer {
 
         if (newAnalysisBtn) {
             newAnalysisBtn.addEventListener('click', () => this.resetToInitialView());
+        }
+
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => this.cancelAnalysis());
+        }
+
+        if (retryBtn) {
+            retryBtn.addEventListener('click', () => this.retryAnalysis());
         }
     }
 
@@ -52,47 +64,100 @@ class TumiLabsAnalyzer {
 
         this.hideElement('analysis-input');
         this.showElement('analysis-progress');
+        this.showCancelButton();
+        
+        let analysisError = null;
         
         try {
             await this.runAnalysisFlow(username);
+            this.hideCancelButton(); // Success - hide cancel button
         } catch (error) {
-            console.error('❌ Analysis failed:', error);
-            this.showNotification(`Analysis failed: ${error.message}`, 'error');
-            this.resetToInitialView();
+            analysisError = error;
+            
+            if (error.name === 'AbortError') {
+                console.log('🚫 Analysis cancelled by user');
+                this.showNotification('Analysis cancelled', 'info');
+                this.resetToInitialView();
+            } else {
+                console.error('❌ Analysis failed:', error);
+                
+                // Only show retry option for true failures, not for fallbacks that worked
+                if (error.message.includes('timeout') || error.message.includes('network') || error.message.includes('ECONNREFUSED')) {
+                    this.updateProgress(27, 'Connection failed. Please try again.', 'step-scraping');
+                    this.hideCancelButton();
+                    this.showRetryButton();
+                    this.showNotification('Connection failed. Click "Try Again" to retry.', 'error');
+                } else {
+                    this.showNotification(`Analysis failed: ${error.message}`, 'error');
+                    this.resetToInitialView();
+                }
+            }
         }
     }
 
     async runAnalysisFlow(username) {
         try {
+            // Phase 1: Data Collection (0% → 30%)
             this.updateProgress(0, 'Initializing Analysis...', 'step-scraping');
+            this.activateStep('step-scraping');
             
-            await this.delay(1000);
-            this.updateProgress(15, 'Connecting to TikTok via Apify...', 'step-scraping');
+            await this.delay(800);
+            this.updateProgress(10, 'Connecting to TikTok via Apify...', 'step-scraping');
             
-            const scrapingResult = await this.fetchTikTokData(username);
+            await this.delay(500);
+            this.updateProgress(20, 'Establishing data connection...', 'step-scraping');
             
-            this.updateProgress(35, 'Processing all qualifying videos...', 'step-selecting');
+            // Enhanced data collection with proper progress synchronization
+            const scrapingResult = await this.fetchTikTokDataWithProgress(username);
+            
+            // 30% reached - Data Collection Complete
+            this.updateProgress(30, 'Data collection complete', 'step-scraping');
             this.completeStep('step-scraping');
-            this.activateStep('step-selecting');
+            await this.delay(300);
             
-            await this.delay(1500);
-            this.updateProgress(50, 'Preparing comprehensive metadata analysis...', 'step-selecting');
+            // Phase 2: Video Processing (30% → 50%)
+            this.activateStep('step-selecting');
+            this.updateProgress(35, 'Processing video metadata...', 'step-selecting');
+            
+            await this.delay(600);
+            this.updateProgress(40, 'Filtering qualifying videos...', 'step-selecting');
             
             const topVideos = this.selectTopVideos(scrapingResult);
             
-            this.updateProgress(65, 'Running comprehensive metadata analysis...', 'step-analyzing');
+            await this.delay(500);
+            this.updateProgress(45, 'Analyzing video performance...', 'step-selecting');
+            
+            await this.delay(800);
+            this.updateProgress(50, 'Video processing complete', 'step-selecting');
             this.completeStep('step-selecting');
+            await this.delay(300);
+            
+            // Phase 3: Intelligence Analysis (50% → 75%)
             this.activateStep('step-analyzing');
+            this.updateProgress(55, 'Processing insights and patterns...', 'step-analyzing');
             
-            const analysisResult = await this.performVideoAnalysis(topVideos);
+            const analysisResult = await this.performVideoAnalysisWithProgress(topVideos);
             
-            this.updateProgress(85, 'Generating professional report...', 'step-reporting');
+            this.updateProgress(75, 'Intelligence analysis complete', 'step-analyzing');
             this.completeStep('step-analyzing');
-            this.activateStep('step-reporting');
+            await this.delay(300);
             
-            await this.delay(1000);
-            this.updateProgress(100, 'Analysis Complete!', 'step-reporting');
+            // Phase 4: Report Generation (75% → 90%)
+            this.activateStep('step-reporting');
+            this.updateProgress(80, 'Generating comprehensive report...', 'step-reporting');
+            
+            await this.delay(800);
+            this.updateProgress(85, 'Finalizing analytics dashboard...', 'step-reporting');
+            
+            await this.delay(600);
+            this.updateProgress(90, 'Report generation complete', 'step-reporting');
+            
+            await this.delay(400);
+            this.updateProgress(100, 'Analysis complete!', 'step-reporting');
             this.completeStep('step-reporting');
+            
+            // Mark all steps as completed
+            this.markAllStepsCompleted();
             
             await this.delay(500);
             this.showResults(username, analysisResult);
@@ -104,44 +169,162 @@ class TumiLabsAnalyzer {
         }
     }
 
-    async fetchTikTokData(username) {
+    async fetchTikTokDataWithProgress(username) {
         console.log(`📱 Fetching TikTok data for: ${username}`);
         
         try {
+            // Micro-progress updates for better UX (22% → 30%)
+            this.updateProgress(22, 'Scraping TikTok videos...', 'step-scraping');
+            await this.delay(600);
+            
+            this.updateProgress(25, 'Connecting to TikTok API...', 'step-scraping');
+            await this.delay(400);
+            
+            this.updateProgress(27, 'Downloading video metadata...', 'step-scraping');
             console.log('🌐 Making API request to /api/tiktok/analyze...');
             
-            const response = await fetch('/api/tiktok/analyze', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ username })
-            });
-
-            console.log('📡 API Response status:', response.status);
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('❌ API Error response:', errorText);
-                throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-            }
-
-            const result = await response.json();
-            console.log('📊 API Response data:', result);
+            // Add timeout and progress feedback during API call
+            const result = await this.fetchWithProgressAndTimeout(username);
             
-            if (!result.success) {
-                console.error('❌ API returned failure:', result.error);
-                throw new Error(result.error || 'TikTok analysis failed');
-            }
-
-            console.log('✅ Real TikTok data received:', result.data);
-            return result.data;
+            this.updateProgress(30, 'Processing scraped data...', 'step-scraping');
+            console.log('✅ Real TikTok data received:', result);
+            return result;
             
         } catch (error) {
             console.error('❌ TikTok fetch error:', error);
-            console.log('🔄 Falling back to mock data...');
+            
+            // Clear any lingering progress intervals
+            if (this.progressInterval) {
+                clearInterval(this.progressInterval);
+                this.progressInterval = null;
+            }
+            
+            console.log('🔄 All API attempts failed. Falling back to comprehensive mock data...');
+            
+            // Show user-friendly fallback message but continue process
+            this.updateProgress(27, 'Connection issues detected. Using demo data...', 'step-scraping');
+            await this.delay(1000);
+            
+            // Enhanced mock data progress with clear messaging
+            this.updateProgress(28, 'Generating comprehensive demo analysis...', 'step-scraping');
+            await this.delay(800);
+            
+            this.updateProgress(29, 'Processing demo videos...', 'step-scraping');
+            await this.delay(600);
+            
+            console.log('✅ Mock data generation successful');
             return this.getMockTikTokData(username);
         }
+    }
+
+    async fetchWithProgressAndTimeout(username) {
+        const maxRetries = 2;
+        const timeoutMs = 45000; // 45 second timeout per attempt
+        
+        for (let retryCount = 0; retryCount <= maxRetries; retryCount++) {
+            try {
+                console.log(`📡 API attempt ${retryCount + 1} of ${maxRetries + 1}`);
+                
+                // Clean up any previous intervals
+                if (this.progressInterval) {
+                    clearInterval(this.progressInterval);
+                    this.progressInterval = null;
+                }
+                
+                // Create new AbortController for this attempt
+                this.abortController = new AbortController();
+                
+                // Start micro-progress feedback during API call
+                this.progressInterval = this.startApiProgressFeedback();
+                
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Request timeout - this may indicate API issues')), timeoutMs)
+                );
+                
+                const fetchPromise = fetch('/api/tiktok/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username }),
+                    signal: this.abortController.signal
+                });
+                
+                const response = await Promise.race([fetchPromise, timeoutPromise]);
+                
+                // Clear progress interval on success
+                if (this.progressInterval) {
+                    clearInterval(this.progressInterval);
+                    this.progressInterval = null;
+                }
+                
+                console.log('📡 API Response status:', response.status);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ API Error response:', errorText);
+                    throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+                }
+
+                const result = await response.json();
+                console.log('📊 API Response data:', result);
+                
+                if (!result.success) {
+                    console.error('❌ API returned failure:', result.error);
+                    throw new Error(result.error || 'TikTok analysis failed');
+                }
+
+                console.log(`✅ API successful on attempt ${retryCount + 1}`);
+                return result.data;
+                
+            } catch (error) {
+                // Clear progress interval on error
+                if (this.progressInterval) {
+                    clearInterval(this.progressInterval);
+                    this.progressInterval = null;
+                }
+                
+                console.error(`❌ API attempt ${retryCount + 1} failed:`, error.message);
+                
+                // If this is not the last attempt, show retry message and wait
+                if (retryCount < maxRetries) {
+                    const retryDelay = (retryCount + 1) * 2000; // 2s, 4s delays
+                    this.updateProgress(27, `Connection issue detected. Retrying in ${retryDelay/1000}s... (${retryCount + 1}/${maxRetries})`, 'step-scraping');
+                    await this.delay(retryDelay);
+                    this.updateProgress(27, `Attempting reconnection... (${retryCount + 2}/${maxRetries + 1})`, 'step-scraping');
+                    continue; // Try again
+                }
+                
+                // All retries failed - throw the error to trigger fallback
+                console.error(`❌ All ${maxRetries + 1} attempts failed. Falling back to mock data.`);
+                throw error;
+            }
+        }
+    }
+
+    startApiProgressFeedback() {
+        let progressStep = 27;
+        const messages = [
+            'Downloading video metadata...',
+            'This may take a moment...',
+            'Processing video information...',
+            'Extracting engagement data...',
+            'Analyzing content patterns...',
+            'Almost ready...'
+        ];
+        let messageIndex = 0;
+        
+        return setInterval(() => {
+            if (progressStep < 29.5) {
+                progressStep += 0.5;
+                const message = messages[messageIndex % messages.length];
+                this.updateProgress(Math.floor(progressStep), message, 'step-scraping');
+                
+                if (progressStep % 1 === 0) { // Change message every full percentage
+                    messageIndex++;
+                }
+            }
+        }, 3000); // Update every 3 seconds
     }
 
     getMockTikTokData(username) {
@@ -235,8 +418,14 @@ class TumiLabsAnalyzer {
         return data.allVideosAnalyzed || data.topVideos || [];
     }
 
-    async performVideoAnalysis(videos) {
+    async performVideoAnalysisWithProgress(videos) {
         try {
+            // Intelligence Analysis Phase (55% → 70%)
+            this.updateProgress(60, 'Analyzing engagement patterns...', 'step-analyzing');
+            await this.delay(600);
+            
+            this.updateProgress(65, 'Processing intelligence metrics...', 'step-analyzing');
+            
             const response = await fetch('/api/analysis/videos', {
                 method: 'POST',
                 headers: {
@@ -245,6 +434,9 @@ class TumiLabsAnalyzer {
                 body: JSON.stringify({ videos })
             });
 
+            this.updateProgress(70, 'Finalizing insights...', 'step-analyzing');
+            await this.delay(500);
+            
             if (!response.ok) {
                 throw new Error(`Analysis failed: ${response.status}`);
             }
@@ -254,6 +446,14 @@ class TumiLabsAnalyzer {
             
         } catch (error) {
             console.error('Analysis API error:', error);
+            
+            // Simplified mock analysis progress
+            this.updateProgress(60, 'Processing mock analysis...', 'step-analyzing');
+            await this.delay(800);
+            this.updateProgress(65, 'Calculating insights...', 'step-analyzing');
+            await this.delay(600);
+            this.updateProgress(70, 'Finalizing patterns...', 'step-analyzing');
+            await this.delay(500);
             return this.getMockAnalysisData(videos);
         }
     }
@@ -468,7 +668,7 @@ class TumiLabsAnalyzer {
                                     <span class="duration-label">${duration}</span>
                                     <div class="duration-bar">
                                         <div class="duration-fill" style="width: ${data.percentage}%"></div>
-                                        <span class="duration-text">${data.percentage}% (${data.count})</span>
+                                        <span class="duration-text">${data.percentage}% (${data.count} videos) - Avg: ${data.engagement}% engagement</span>
                                     </div>
                                 </div>
                             `).join('')}
@@ -481,6 +681,9 @@ class TumiLabsAnalyzer {
 
                     <div class="intelligence-section">
                         <h4>📝 Caption Strategy</h4>
+                        <div class="caption-legend">
+                            <strong>📝 Caption Length Guide:</strong> Short captions: 1-10 words, Medium captions: 11-25 words, Long captions: 26-50 words, Extended captions: 51+ words
+                        </div>
                         <div class="caption-analysis">
                             ${Object.entries(metadata.captionStrategy.lengthPerformance).map(([length, data]) => `
                                 <div class="caption-item">
@@ -653,7 +856,6 @@ class TumiLabsAnalyzer {
         this.populatePerformanceInsights(insights.performance);
         this.populateTimingInsights(insights.timing);
         this.populateHashtagInsights(insights.hashtags);
-        this.populateCaptionInsights(insights.captions);
     }
 
     populatePerformanceInsights(performance) {
@@ -694,25 +896,6 @@ class TumiLabsAnalyzer {
         `;
     }
 
-    populateCaptionInsights(captions) {
-        const container = document.getElementById('caption-insights');
-        
-        container.innerHTML = `
-            <div class="insight-item">
-                <span class="insight-label">Optimal Length</span>
-                <span class="insight-value">${captions.optimalLength} words</span>
-            </div>
-            <div class="insight-item">
-                <span class="insight-label">Short Captions (≤10)</span>
-                <span class="insight-value">${captions.distribution.short} videos</span>
-            </div>
-            <div class="insight-item">
-                <span class="insight-label">Long Captions (>25)</span>
-                <span class="insight-value">${captions.distribution.long} videos</span>
-            </div>
-        `;
-    }
-
     populateTimingInsights(timing) {
         const container = document.getElementById('timing-insights');
         
@@ -748,16 +931,16 @@ class TumiLabsAnalyzer {
                     {
                         label: 'Engagement Rate (%)',
                         data: engagementData,
-                        backgroundColor: 'rgba(255, 107, 53, 0.8)',
-                        borderColor: 'rgba(255, 107, 53, 1)',
+                        backgroundColor: 'rgba(130, 54, 251, 0.8)',
+                        borderColor: 'rgba(130, 54, 251, 1)',
                         borderWidth: 2,
                         yAxisID: 'y'
                     },
                     {
                         label: 'Views (Millions)',
                         data: viewsData,
-                        backgroundColor: 'rgba(247, 147, 30, 0.8)',
-                        borderColor: 'rgba(247, 147, 30, 1)',
+                        backgroundColor: 'rgba(107, 70, 193, 0.8)',
+                        borderColor: 'rgba(107, 70, 193, 1)',
                         borderWidth: 2,
                         yAxisID: 'y1'
                     }
@@ -847,17 +1030,34 @@ class TumiLabsAnalyzer {
         this.currentAnalysis = null;
         document.getElementById('tiktok-username').value = '';
         
+        // Clean up any ongoing operations
+        if (this.abortController) {
+            this.abortController = null;
+        }
+        
+        if (this.progressInterval) {
+            clearInterval(this.progressInterval);
+            this.progressInterval = null;
+        }
+        
         if (this.performanceChart) {
             this.performanceChart.destroy();
             this.performanceChart = null;
         }
         
+        this.hideCancelButton();
+        this.hideRetryButton();
         this.showInitialView();
     }
 
     updateProgress(percentage, message, activeStep) {
         document.getElementById('progress-percentage').textContent = `${percentage}%`;
-        document.getElementById('progress-title').textContent = message;
+        
+        // Add spinner for long operations
+        const showSpinner = message.includes('Downloading') || message.includes('This may take') || message.includes('Connecting');
+        const spinnerHtml = showSpinner ? '<div class="progress-spinner"></div>' : '';
+        document.getElementById('progress-title').innerHTML = `${spinnerHtml}${message}`;
+        
         document.getElementById('progress-fill').style.width = `${percentage}%`;
         
         if (activeStep) {
@@ -882,6 +1082,17 @@ class TumiLabsAnalyzer {
             stepEl.classList.remove('active');
             stepEl.classList.add('completed');
         }
+    }
+
+    markAllStepsCompleted() {
+        const steps = ["step-scraping", "step-selecting", "step-analyzing", "step-reporting"];
+        steps.forEach(stepId => {
+            const stepEl = document.getElementById(stepId);
+            if (stepEl) {
+                stepEl.classList.remove("active");
+                stepEl.classList.add("completed");
+            }
+        });
     }
 
     showElement(elementId) {
@@ -915,7 +1126,7 @@ class TumiLabsAnalyzer {
             font-weight: 600;
             z-index: 1000;
             animation: slideInRight 0.3s ease;
-            background: ${type === 'error' ? '#DC3545' : type === 'success' ? '#28A745' : '#FF6B35'};
+            background: ${type === 'error' ? '#DC3545' : type === 'success' ? '#28A745' : '#8236FB'};
         `;
         
         document.body.appendChild(notification);
@@ -942,6 +1153,145 @@ class TumiLabsAnalyzer {
     delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
+
+    cancelAnalysis() {
+        console.log('🚫 User requested analysis cancellation');
+        
+        // Abort any ongoing fetch requests
+        if (this.abortController) {
+            this.abortController.abort();
+        }
+        
+        // Clear any progress intervals
+        if (this.progressInterval) {
+            clearInterval(this.progressInterval);
+            this.progressInterval = null;
+        }
+        
+        // Reset to initial view
+        this.resetToInitialView();
+        this.showNotification('Analysis cancelled successfully', 'info');
+    }
+
+    showCancelButton() {
+        const cancelBtn = document.getElementById('cancel-analysis');
+        if (cancelBtn) {
+            cancelBtn.classList.remove('hidden');
+        }
+    }
+
+    hideCancelButton() {
+        const cancelBtn = document.getElementById('cancel-analysis');
+        if (cancelBtn) {
+            cancelBtn.classList.add('hidden');
+        }
+    }
+
+    showRetryButton() {
+        const retryBtn = document.getElementById('retry-analysis');
+        if (retryBtn) {
+            retryBtn.classList.remove('hidden');
+        }
+    }
+
+    hideRetryButton() {
+        const retryBtn = document.getElementById('retry-analysis');
+        if (retryBtn) {
+            retryBtn.classList.add('hidden');
+        }
+    }
+
+    retryAnalysis() {
+        console.log('🔄 User requested analysis retry');
+        const username = document.getElementById('tiktok-username').value.trim();
+        
+        if (username) {
+            this.hideRetryButton();
+            this.showCancelButton();
+            this.startAnalysis();
+        } else {
+            this.showNotification('Please enter a username to retry', 'error');
+            this.resetToInitialView();
+        }
+    }
+
+    startDynamicProgress(startPercent, endPercent, baseMessage) {
+        let currentPercent = startPercent;
+        const increment = (endPercent - startPercent) / 20; // Update every ~500ms over ~10 seconds
+        
+        const messages = [
+            `${baseMessage}`,
+            `${baseMessage.replace('...', '')} (processing data...)`,
+            `${baseMessage.replace('...', '')} (analyzing patterns...)`,
+            `${baseMessage.replace('...', '')} (calculating metrics...)`
+        ];
+        
+        let messageIndex = 0;
+        
+        return setInterval(() => {
+            if (currentPercent < endPercent) {
+                currentPercent = Math.min(currentPercent + increment, endPercent);
+                
+                // Cycle through messages every few updates
+                if (Math.floor(currentPercent) % 3 === 0) {
+                    messageIndex = (messageIndex + 1) % messages.length;
+                }
+                
+                this.updateProgress(
+                    Math.floor(currentPercent), 
+                    messages[messageIndex],
+                    null // Don't change active step during dynamic updates
+                );
+            }
+        }, 500); // Update every 500ms
+    }
+// Additional methods for enhanced progress tracking
+// These should be added to the TumiLabsAnalyzer class
+
+async simulateDataCollectionProgress(phases) {
+    for (let i = 0; i < phases.length; i++) {
+        const phase = phases[i];
+        this.updateProgress(phase.percent, phase.message, 'step-scraping');
+        
+        // Add some variation in timing to feel realistic
+        const delay = 2000 + Math.random() * 1000; // 2-3 seconds per phase
+        await this.delay(delay);
+    }
+}
+
+async simulateMockDataProgress(username) {
+    const videoCount = 23; // Mock video count
+    const basePercent = 30;
+    const endPercent = 55;
+    const progressPerVideo = (endPercent - basePercent) / videoCount;
+    
+    this.updateProgress(30, 'Generating comprehensive mock data...', 'step-scraping');
+    await this.delay(800);
+    
+    for (let i = 1; i <= videoCount; i++) {
+        const currentPercent = Math.floor(basePercent + (i * progressPerVideo));
+        const message = `Processing video ${i} of ${videoCount}...`;
+        this.updateProgress(currentPercent, message, 'step-scraping');
+        
+        // Faster simulation for demo (200-500ms per video)
+        await this.delay(200 + Math.random() * 300);
+    }
+}
+
+async simulateMockAnalysisProgress(videos) {
+    const phases = [
+        { percent: 80, message: 'Analyzing engagement patterns...', delay: 800 },
+        { percent: 82, message: 'Calculating performance metrics...', delay: 600 },
+        { percent: 84, message: 'Processing hashtag intelligence...', delay: 700 },
+        { percent: 86, message: 'Analyzing posting behavior...', delay: 500 },
+        { percent: 88, message: 'Generating strategic insights...', delay: 600 }
+    ];
+    
+    for (const phase of phases) {
+        this.updateProgress(phase.percent, phase.message, 'step-analyzing');
+        await this.delay(phase.delay);
+    }
+}
 }
 
 const analyzer = new TumiLabsAnalyzer();
@@ -1015,9 +1365,56 @@ style.textContent = `
         text-transform: uppercase;
     }
     
-    .hashtag-tag { background: rgba(255, 107, 53, 0.1); color: var(--primary-color); }
+    .hashtag-tag { background: rgba(130, 54, 251, 0.1); color: var(--primary-color); }
     .caption-tag { background: rgba(40, 167, 69, 0.1); color: var(--success-color); }
     .timing-tag { background: rgba(255, 193, 7, 0.1); color: var(--warning-color); }
     .cta-tag { background: rgba(220, 53, 69, 0.1); color: var(--danger-color); }
+    
+    .historical-notice {
+        background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+        border: 1px solid #90caf9;
+        border-radius: 12px;
+        margin: 1rem 0;
+        padding: 0;
+        overflow: hidden;
+    }
+    
+    .historical-notice-content {
+        display: flex;
+        align-items: flex-start;
+        padding: 1.5rem;
+        gap: 1rem;
+    }
+    
+    .notice-icon {
+        color: #1976d2;
+        font-size: 1.5rem;
+        margin-top: 0.2rem;
+    }
+    
+    .notice-text h4 {
+        color: #1976d2;
+        margin: 0 0 0.5rem 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    
+    .notice-text p {
+        margin: 0 0 1rem 0;
+        color: #333;
+        line-height: 1.5;
+    }
+    
+    .timeframe-details {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        font-size: 0.9rem;
+        color: #666;
+    }
+    
+    .timeframe-details span {
+        display: block;
+    }
 `;
 document.head.appendChild(style);

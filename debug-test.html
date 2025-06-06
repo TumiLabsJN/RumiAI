@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TikTok Analyzer Debug Test</title>
+</head>
+<body>
+    <h1>🧪 TikTok Analyzer Debug Test</h1>
+    
+    <div>
+        <input type="text" id="username" placeholder="Enter TikTok username" value="mrbeast">
+        <button onclick="testAnalysis()">Test Analysis</button>
+    </div>
+    
+    <div id="results" style="margin-top: 20px; padding: 20px; background: #f5f5f5;">
+        <h3>Results will appear here...</h3>
+    </div>
+
+    <script>
+        async function testAnalysis() {
+            const username = document.getElementById('username').value;
+            const resultsDiv = document.getElementById('results');
+            
+            console.log('🧪 Testing analysis for:', username);
+            resultsDiv.innerHTML = '<h3>🔄 Testing...</h3>';
+            
+            try {
+                console.log('📡 Making API request...');
+                
+                const response = await fetch('/api/tiktok/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username })
+                });
+                
+                console.log('📡 Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                console.log('📊 API Response:', result);
+                
+                resultsDiv.innerHTML = `
+                    <h3>✅ Success!</h3>
+                    <p><strong>Username:</strong> ${result.data.username}</p>
+                    <p><strong>Total Videos:</strong> ${result.data.totalVideos}</p>
+                    <p><strong>Top Videos:</strong> ${result.data.topVideos.length}</p>
+                    <p><strong>Data Source:</strong> ${result.data.dataSource || 'Apify'}</p>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                `;
+                
+            } catch (error) {
+                console.error('❌ Error:', error);
+                resultsDiv.innerHTML = `
+                    <h3>❌ Error</h3>
+                    <p>${error.message}</p>
+                `;
+            }
+        }
+        
+        console.log('🧪 Debug test page loaded');
+    </script>
+</body>
+</html>

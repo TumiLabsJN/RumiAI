@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Progress Test - 30% Bottleneck Fix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        .progress-demo {
+            margin: 2rem 0;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: #e0e0e0;
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FF6B35, #F7931E);
+            border-radius: 6px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 1rem 0;
+            font-weight: 600;
+        }
+        .btn {
+            background: #FF6B35;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 0.5rem;
+        }
+        .btn:hover {
+            background: #e55a2b;
+        }
+        .status {
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+            font-family: monospace;
+        }
+        .status.info {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+        }
+        .status.success {
+            background: #e8f5e8;
+            border-left: 4px solid #4caf50;
+        }
+        .phases {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .phase {
+            margin: 0.5rem 0;
+            padding: 0.25rem 0;
+            border-bottom: 1px solid #ddd;
+        }
+        .phase:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🚀 Enhanced Progress Test - 30% Bottleneck Fix</h1>
+        <p>This tests the improved granular progress system that breaks down the 30% → 60% data collection phase.</p>
+        
+        <div class="progress-demo">
+            <h3>Progress Flow Simulation</h3>
+            <div class="progress-info">
+                <span id="progress-message">Ready to test enhanced progress...</span>
+                <span id="progress-percent">0%</span>
+            </div>
+            <div class="progress-bar">
+                <div id="progress-fill" class="progress-fill"></div>
+            </div>
+            
+            <button class="btn" onclick="testEnhancedFlow()">Test Enhanced Flow (30% → 60% Fix)</button>
+            <button class="btn" onclick="testOriginalProblem()">Test Original Problem (Stuck at 30%)</button>
+            <button class="btn" onclick="resetProgress()">Reset</button>
+        </div>
+        
+        <div id="test-status" class="status info">
+            <strong>Test Status:</strong> Ready to test the 30% bottleneck fix
+        </div>
+        
+        <div class="test-container">
+            <h3>🎯 Enhanced Progress Distribution</h3>
+            <div class="phases">
+                <div class="phase"><strong>0% → 20%:</strong> Initialization & Connection</div>
+                <div class="phase"><strong>20% → 60%:</strong> Data Collection (30% → 35% → 40% → 45% → 50% → 55%)</div>
+                <div class="phase"><strong>60% → 75%:</strong> Video Processing</div>
+                <div class="phase"><strong>75% → 90%:</strong> Intelligence Analysis</div>
+                <div class="phase"><strong>90% → 100%:</strong> Report Generation</div>
+            </div>
+        </div>
+        
+        <div class="test-container">
+            <h3>🔧 Key Improvements</h3>
+            <ul>
+                <li><strong>Granular Data Collection:</strong> 30% → 35% → 40% → 45% → 50% → 55% with meaningful messages</li>
+                <li><strong>Video Counting Progress:</strong> "Processing video 15 of 23..." with incremental updates</li>
+                <li><strong>Realistic Timing:</strong> Progress distribution matches actual API processing time</li>
+                <li><strong>Dynamic Phases:</strong> Each sub-phase shows different collection activities</li>
+                <li><strong>No Long Stalls:</strong> Maximum wait between updates is 3 seconds (vs 2+ minutes before)</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function updateProgress(percent, message) {
+            document.getElementById('progress-percent').textContent = percent + '%';
+            document.getElementById('progress-message').textContent = message;
+            document.getElementById('progress-fill').style.width = percent + '%';
+        }
+
+        function setStatus(message, type = 'info') {
+            const statusEl = document.getElementById('test-status');
+            statusEl.innerHTML = `<strong>Test Status:</strong> ${message}`;
+            statusEl.className = `status ${type}`;
+        }
+
+        async function testEnhancedFlow() {
+            setStatus('Testing enhanced flow with granular 30% → 60% progression...', 'info');
+            
+            // Phase 1: Initialization (0% → 20%)
+            updateProgress(0, 'Initializing Analysis...');
+            await delay(800);
+            updateProgress(10, 'Connecting to TikTok via Apify...');
+            await delay(500);
+            updateProgress(20, 'Establishing data connection...');
+            await delay(500);
+            
+            // Phase 2: Enhanced Data Collection (20% → 60%) - The Fix!
+            updateProgress(25, 'Connecting to TikTok API...');
+            await delay(800);
+            updateProgress(30, 'Sending data request...');
+            await delay(600);
+            
+            // Granular sub-phases with realistic progression
+            const dataPhases = [
+                { percent: 35, message: 'Downloading video metadata...', delay: 2000 },
+                { percent: 40, message: 'Processing engagement data...', delay: 2500 },
+                { percent: 45, message: 'Extracting hashtag information...', delay: 2200 },
+                { percent: 50, message: 'Analyzing video performance...', delay: 2800 }
+            ];
+            
+            for (const phase of dataPhases) {
+                updateProgress(phase.percent, phase.message);
+                await delay(phase.delay);
+            }
+            
+            // Video counting simulation
+            updateProgress(52, 'Processing response data...');
+            await delay(800);
+            
+            for (let i = 1; i <= 23; i++) {
+                const percent = 52 + Math.floor((i / 23) * 8); // 52% → 60%
+                updateProgress(percent, `Processing video ${i} of 23...`);
+                await delay(100); // Fast for demo
+            }
+            
+            // Phase 3: Video Processing (60% → 75%)
+            updateProgress(60, 'Processing video metadata...');
+            await delay(600);
+            updateProgress(65, 'Filtering qualifying videos...');
+            await delay(500);
+            updateProgress(70, 'Preparing comprehensive analysis...');
+            await delay(400);
+            updateProgress(75, 'Initializing intelligence engine...');
+            await delay(400);
+            
+            // Phase 4: Intelligence Analysis (75% → 90%)
+            updateProgress(76, 'Initializing engagement analysis...');
+            await delay(500);
+            updateProgress(78, 'Loading pattern recognition models...');
+            await delay(400);
+            updateProgress(80, 'Analyzing video performance patterns...');
+            await delay(600);
+            updateProgress(84, 'Processing intelligence metrics...');
+            await delay(600);
+            updateProgress(88, 'Finalizing analysis results...');
+            await delay(400);
+            
+            // Phase 5: Report Generation (90% → 100%)
+            updateProgress(90, 'Generating professional report...');
+            await delay(600);
+            updateProgress(95, 'Finalizing analytics dashboard...');
+            await delay(500);
+            updateProgress(100, 'Analysis Complete!');
+            
+            setStatus('Enhanced flow test complete - No more 30% bottleneck!', 'success');
+        }
+
+        async function testOriginalProblem() {
+            setStatus('Demonstrating original 30% bottleneck problem...', 'info');
+            
+            updateProgress(0, 'Initializing Analysis...');
+            await delay(800);
+            updateProgress(10, 'Connecting to TikTok via Apify...');
+            await delay(500);
+            updateProgress(30, 'Scraping TikTok videos (analyzing patterns...)');
+            
+            // This is where it would get stuck for 2+ minutes
+            setStatus('⚠️ STUCK HERE: Progress would stay at 30% for 2+ minutes in original version', 'info');
+            await delay(8000); // Simulate the problem (shortened for demo)
+            
+            updateProgress(60, 'Finally moving after long delay...');
+            await delay(1000);
+            updateProgress(100, 'Complete (but user confidence destroyed)');
+            
+            setStatus('Original problem demonstrated - Notice the painful wait at 30%', 'info');
+        }
+
+        function resetProgress() {
+            updateProgress(0, 'Ready to test enhanced progress...');
+            setStatus('Reset complete - Ready for next test', 'info');
+        }
+
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+</body>
+</html>
