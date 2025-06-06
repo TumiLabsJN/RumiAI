@@ -31,10 +31,16 @@ class TikTokService {
 
             console.log('🚀 Calling Apify actor with input:', input);
             
-            const run = await this.client.actor(this.actorId).call(input);
+            // Add timeout to Apify actor call (120 seconds)
+            const run = await this.client.actor(this.actorId).call(input, {
+                timeout: 120000 // 2 minutes timeout
+            });
             console.log('📋 Apify run completed:', run.id);
             
-            const { items } = await this.client.dataset(run.defaultDatasetId).listItems();
+            // Add timeout to dataset retrieval (60 seconds)
+            const { items } = await this.client.dataset(run.defaultDatasetId).listItems({
+                timeout: 60000 // 1 minute timeout
+            });
             console.log(`📊 Retrieved ${items?.length || 0} items from dataset`);
 
             if (!items || items.length === 0) {

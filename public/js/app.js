@@ -212,7 +212,7 @@ class TumiLabsAnalyzer {
 
     async fetchWithProgressAndTimeout(username) {
         const maxRetries = 2;
-        const timeoutMs = 45000; // 45 second timeout per attempt
+        const timeoutMs = 90000; // 90 second timeout per attempt (increased for TikTok API)
         
         for (let retryCount = 0; retryCount <= maxRetries; retryCount++) {
             try {
@@ -299,8 +299,9 @@ class TumiLabsAnalyzer {
         let progressStep = 27;
         const messages = [
             'Downloading video metadata...',
-            'This may take a moment...',
+            'This may take up to 2 minutes...',
             'Processing video information...',
+            'TikTok API can be slow, please wait...',
             'Extracting engagement data...',
             'Analyzing content patterns...',
             'Almost ready...'
