@@ -84,26 +84,102 @@ class MetadataAnalysisService {
     }
 
     analyzeVideoDuration(videos) {
-        const durations = videos.map(v => v.duration || 30);
-        const buckets = {
-            short: durations.filter(d => d <= 15).length,
-            medium: durations.filter(d => d > 15 && d <= 30).length,
-            long: durations.filter(d => d > 30 && d <= 60).length,
-            extended: durations.filter(d => d > 60).length
-        };
-
-        const durationEngagement = this.correlateDurationWithEngagement(videos);
+        // Calculate real engagement rates for each duration bucket
+        const bucketData = this.calculateDurationBuckets(videos);
+        const optimalDuration = this.findOptimalDuration(videos, bucketData);
         
         return {
-            distributionBreakdown: {
-                '15s and under': { count: buckets.short, percentage: ((buckets.short / videos.length) * 100).toFixed(1), engagement: '18.2' },
-                '16-30s': { count: buckets.medium, percentage: ((buckets.medium / videos.length) * 100).toFixed(1), engagement: '16.6' },
-                '31-60s': { count: buckets.long, percentage: ((buckets.long / videos.length) * 100).toFixed(1), engagement: '17.9' },
-                '60s+': { count: buckets.extended, percentage: ((buckets.extended / videos.length) * 100).toFixed(1), engagement: '15.4' }
-            },
-            correlationAnalysis: durationEngagement,
-            optimalDuration: this.findOptimalDuration(videos),
-            strategicInsight: this.generateDurationStrategy(durationEngagement)
+            distributionBreakdown: bucketData,
+            optimalDuration: optimalDuration,
+            strategicInsight: this.generateDurationStrategy(bucketData)
+        };
+    }
+
+    calculateDurationBuckets(videos) {
+        const buckets = {
+            '15s and under': { videos: [], min: 0, max: 15 },
+            '16-30s': { videos: [], min: 16, max: 30 },
+            '31-60s': { videos: [], min: 31, max: 60 },
+            '60s+': { videos: [], min: 61, max: Infinity }
+        };
+
+        // Categorize videos into buckets
+        videos.forEach(video => {
+            const duration = video.duration || 30;
+            if (duration <= 15) {
+                buckets['15s and under'].videos.push(video);
+            } else if (duration <= 30) {
+                buckets['16-30s'].videos.push(video);
+            } else if (duration <= 60) {
+                buckets['31-60s'].videos.push(video);
+            } else {
+                buckets['60s+'].videos.push(video);
+            }
+        });
+
+        // Calculate stats for each bucket
+        const result = {};
+        Object.keys(buckets).forEach(bucketName => {
+            const bucketVideos = buckets[bucketName].videos;
+            const count = bucketVideos.length;
+            const percentage = ((count / videos.length) * 100).toFixed(1);
+            
+            let engagement = 'N/A';
+            if (count > 0) {
+                const avgEngagement = bucketVideos.reduce((sum, v) => sum + (v.engagementRate || 0), 0) / count;
+                engagement = avgEngagement.toFixed(1);
+            }
+            
+            result[bucketName] = {
+                count: count,
+                percentage: percentage,
+                engagement: engagement
+            };
+        });
+
+        return result;
+    }
+
+    findOptimalDuration(videos, bucketData) {
+        let bestBucket = null;
+        let highestEngagement = -1;
+        let mostVideos = 0;
+
+        Object.entries(bucketData).forEach(([bucketName, data]) => {
+            if (data.count > 0 && data.engagement !== 'N/A') {
+                const engagement = parseFloat(data.engagement);
+                
+                // Find bucket with highest engagement
+                // In case of tie, prefer bucket with more videos
+                if (engagement > highestEngagement || 
+                    (engagement === highestEngagement && data.count > mostVideos)) {
+                    highestEngagement = engagement;
+                    mostVideos = data.count;
+                    bestBucket = bucketName;
+                }
+            }
+        });
+
+        if (!bestBucket) {
+            return { optimal: 'N/A', engagement: 'N/A' };
+        }
+
+        // Calculate representative duration for the optimal bucket
+        let optimalDuration = 'N/A';
+        if (bestBucket === '15s and under') {
+            optimalDuration = '15';
+        } else if (bestBucket === '16-30s') {
+            optimalDuration = '25';
+        } else if (bestBucket === '31-60s') {
+            optimalDuration = '45';
+        } else if (bestBucket === '60s+') {
+            optimalDuration = '75';
+        }
+
+        return {
+            optimal: optimalDuration,
+            engagement: highestEngagement.toFixed(1),
+            bucketName: bestBucket
         };
     }
 
@@ -212,19 +288,38 @@ class MetadataAnalysisService {
 
     identifyCompetitiveAdvantages(videos) {
         const avgEngagement = this.calculateAverageEngagement(videos);
+        const consistencyScore = this.calculateConsistencyScore(videos.map(v => v.engagementRate));
+        const industryAverage = 4.2; // TikTok industry benchmark
         const advantages = [];
         
-        if (avgEngagement > 8) {
-            advantages.push('🎯 Superior engagement rate performance (2x industry average)');
+        // Dynamic engagement advantage calculation
+        if (avgEngagement > industryAverage * 2) {
+            advantages.push(`🎯 Exceptional engagement rate (${(avgEngagement / industryAverage).toFixed(1)}x industry average of ${industryAverage}%)`);
+        } else if (avgEngagement > industryAverage * 1.5) {
+            advantages.push(`🎯 Above-average engagement performance (${(avgEngagement / industryAverage).toFixed(1)}x industry benchmark)`);
+        } else if (avgEngagement > industryAverage) {
+            advantages.push(`🎯 Solid engagement rate performance (${(avgEngagement / industryAverage).toFixed(1)}x industry average)`);
         }
         
-        if (this.calculateConsistencyScore(videos.map(v => v.engagementRate)) > 0.7) {
-            advantages.push('📊 Exceptional content consistency and predictable performance');
+        // Dynamic consistency advantage
+        if (consistencyScore > 0.8) {
+            advantages.push(`📊 Exceptional content consistency (${(consistencyScore * 100).toFixed(0)}% consistency score)`);
+        } else if (consistencyScore > 0.6) {
+            advantages.push(`📊 Strong content consistency and predictable performance`);
         }
         
+        // Viral content frequency
         const topPerformers = videos.filter(v => v.engagementRate > avgEngagement * 1.5);
-        if (topPerformers.length > videos.length * 0.3) {
-            advantages.push('🚀 High frequency of viral-potential content creation');
+        const viralRate = (topPerformers.length / videos.length) * 100;
+        if (viralRate > 30) {
+            advantages.push(`🚀 High viral content frequency (${viralRate.toFixed(0)}% of content exceeds performance benchmarks)`);
+        } else if (viralRate > 15) {
+            advantages.push(`🚀 Moderate viral potential with ${viralRate.toFixed(0)}% standout content`);
+        }
+        
+        // Content volume advantage
+        if (videos.length > 20) {
+            advantages.push(`📈 Substantial content portfolio (${videos.length} videos analyzed)`);
         }
         
         return {
@@ -261,13 +356,16 @@ class MetadataAnalysisService {
         }
         
         // Duration optimization
-        const optimalDuration = this.findOptimalDuration(videos);
-        recommendations.push({
-            category: 'Duration Strategy',
-            priority: 'Medium',
-            recommendation: `Optimize for ${optimalDuration.range} second content (${optimalDuration.bucket} performs best)`,
-            expectedImpact: '8-15% engagement boost'
-        });
+        const bucketData = this.calculateDurationBuckets(videos);
+        const optimalDuration = this.findOptimalDuration(videos, bucketData);
+        if (optimalDuration.optimal !== 'N/A') {
+            recommendations.push({
+                category: 'Duration Strategy',
+                priority: 'Medium',
+                recommendation: `Optimize for ${optimalDuration.bucketName} content (${optimalDuration.engagement}% avg engagement)`,
+                expectedImpact: '8-15% engagement boost'
+            });
+        }
         
         return {
             immediateActions: recommendations.filter(r => r.priority === 'High'),

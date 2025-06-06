@@ -15,7 +15,7 @@ class TumiLabsAnalyzer {
     setupEventListeners() {
         const analysisForm = document.getElementById('analysis-form');
         const exportBtn = document.getElementById('export-pdf');
-        const newAnalysisBtn = document.getElementById('new-analysis');
+        // const newAnalysisBtn = document.getElementById('new-analysis'); // Removed from UI
         const cancelBtn = document.getElementById('cancel-analysis');
         const retryBtn = document.getElementById('retry-analysis');
 
@@ -30,9 +30,9 @@ class TumiLabsAnalyzer {
             exportBtn.addEventListener('click', () => this.exportPDFReport());
         }
 
-        if (newAnalysisBtn) {
-            newAnalysisBtn.addEventListener('click', () => this.resetToInitialView());
-        }
+        // if (newAnalysisBtn) {
+        //     newAnalysisBtn.addEventListener('click', () => this.resetToInitialView());
+        // } // Removed from UI
 
         if (cancelBtn) {
             cancelBtn.addEventListener('click', () => this.cancelAnalysis());
@@ -387,12 +387,12 @@ class TumiLabsAnalyzer {
         if (data.isHistoricalAnalysis && data.historicalPeriod) {
             headerText = `Historical Analysis for @${username} (${videoCount} videos)`;
         }
-        document.getElementById('analysis-username').textContent = headerText;
+        // document.getElementById('analysis-username').textContent = headerText; // Element removed from UI
         
         // Add historical timeframe notice if applicable
         this.addHistoricalNotice(data);
         
-        this.populateInsights(data.insights);
+        // this.populateInsights(data.insights); // Removed insights grid from UI
         
         // Add comprehensive metadata analysis if available
         if (data.metadataIntelligence) {
@@ -484,7 +484,7 @@ class TumiLabsAnalyzer {
                             </div>
                             <div class="analytics-item">
                                 <span class="analytics-label">Consistency Score</span>
-                                <span class="analytics-value">${metadata.engagementMetrics.engagementDistribution.consistencyScore}</span>
+                                <span class="analytics-value">${parseFloat(metadata.engagementMetrics.engagementDistribution.consistencyScore).toFixed(2)}</span>
                             </div>
                             <div class="analytics-item">
                                 <span class="analytics-label">Performance Gap</span>
@@ -501,14 +501,13 @@ class TumiLabsAnalyzer {
                                     <span class="duration-label">${duration}</span>
                                     <div class="duration-bar">
                                         <div class="duration-fill" style="width: ${data.percentage}%"></div>
-                                        <span class="duration-text">${data.percentage}% (${data.count} videos) - Avg: ${data.engagement}% engagement</span>
+                                        <span class="duration-text">${data.percentage}% (${data.count} videos)${data.engagement !== 'N/A' ? ` - Avg: ${data.engagement}% engagement` : ' - No videos'}</span>
                                     </div>
                                 </div>
                             `).join('')}
                         </div>
                         <div class="optimal-duration">
-                            <strong>Optimal Duration:</strong> ${metadata.videoDurationIntelligence.optimalDuration.optimal}s 
-                            (${metadata.videoDurationIntelligence.optimalDuration.engagement}% avg engagement)
+                            <strong>Optimal Duration:</strong> ${metadata.videoDurationIntelligence.optimalDuration.optimal !== 'N/A' ? `${metadata.videoDurationIntelligence.optimalDuration.optimal}s (${metadata.videoDurationIntelligence.optimalDuration.engagement}% avg engagement)` : 'Insufficient data for recommendation'}
                         </div>
                     </div>
 
