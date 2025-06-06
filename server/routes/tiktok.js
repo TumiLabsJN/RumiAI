@@ -1,7 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const TikTokService = require('../services/TikTokService');
-const VideoAnalysisService = require('../services/VideoAnalysisService');
+
+// Try to load VideoAnalysisService, but don't fail if it's not available
+let VideoAnalysisService = null;
+try {
+    VideoAnalysisService = require('../services/VideoAnalysisService');
+    console.log('✅ VideoAnalysisService loaded successfully');
+} catch (error) {
+    console.warn('⚠️ VideoAnalysisService not available:', error.message);
+}
 
 router.post('/analyze', async (req, res) => {
     console.log('📥 Received analyze request');
@@ -31,9 +39,31 @@ router.post('/analyze', async (req, res) => {
 
         // Start video analysis asynchronously (non-blocking)
         let videoAnalysisJob = null;
-        if (result.allVideosAnalyzed && result.allVideosAnalyzed.length > 0) {
+        
+        if (!VideoAnalysisService) {
+            console.log('🎬 VideoAnalysisService not loaded - video analysis unavailable');
+            videoAnalysisJob = {
+                error: 'Service not available',
+                message: 'Video analysis service is not configured. See SETUP.md for configuration instructions.'
+            };
+        } else if (result.allVideosAnalyzed && result.allVideosAnalyzed.length > 0) {
             try {
                 console.log('🎬 Starting background video analysis...');
+                console.log(`🎬 Videos available for analysis: ${result.allVideosAnalyzed.length}`);
+                console.log(`🎬 Sample video data:`, JSON.stringify(result.allVideosAnalyzed[0], null, 2));
+                
+                // Check if required environment variables are set
+                const requiredEnvVars = [
+                    'GOOGLE_CLOUD_PROJECT_ID',
+                    'GOOGLE_CLOUD_STORAGE_BUCKET',
+                    'ANTHROPIC_API_KEY'
+                ];
+                
+                const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+                if (missingVars.length > 0) {
+                    throw new Error(`Missing required environment variables: ${missingVars.join(', ')}. See SETUP.md for configuration.`);
+                }
+                
                 const videoJobResult = await VideoAnalysisService.startVideoAnalysis(
                     result.allVideosAnalyzed, 
                     username
@@ -43,15 +73,23 @@ router.post('/analyze', async (req, res) => {
                     status: videoJobResult.status,
                     message: 'Video analysis started in background'
                 };
-                console.log(`🎬 Video analysis job started: ${videoJobResult.jobId}`);
+                console.log(`🎬 Video analysis job started successfully: ${videoJobResult.jobId}`);
             } catch (videoError) {
                 console.error('❌ Failed to start video analysis:', videoError);
+                console.error('❌ Video error stack:', videoError.stack);
                 // Don't fail the main response, just log the error
                 videoAnalysisJob = {
                     error: 'Failed to start video analysis',
-                    message: videoError.message
+                    message: videoError.message,
+                    details: process.env.NODE_ENV === 'development' ? videoError.stack : undefined
                 };
             }
+        } else {
+            console.log('🎬 No videos available for video analysis');
+            videoAnalysisJob = {
+                error: 'No videos available',
+                message: 'No qualifying videos found for video analysis'
+            };
         }
         
         res.json({

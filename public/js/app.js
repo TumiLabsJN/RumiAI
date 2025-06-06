@@ -6,6 +6,7 @@ class TumiLabsAnalyzer {
         this.progressInterval = null;
         this.videoAnalysisJobId = null;
         this.videoAnalysisPolling = null;
+        this.videoAnalysisError = null;
         this.init();
     }
 
@@ -269,9 +270,19 @@ class TumiLabsAnalyzer {
                 console.log(`✅ API successful on attempt ${retryCount + 1}`);
                 
                 // Check if video analysis was started
-                if (result.videoAnalysis && result.videoAnalysis.jobId) {
-                    this.videoAnalysisJobId = result.videoAnalysis.jobId;
-                    console.log(`🎬 Video analysis job ID: ${this.videoAnalysisJobId}`);
+                if (result.videoAnalysis) {
+                    if (result.videoAnalysis.jobId) {
+                        this.videoAnalysisJobId = result.videoAnalysis.jobId;
+                        console.log(`🎬 Video analysis job ID: ${this.videoAnalysisJobId}`);
+                    } else if (result.videoAnalysis.error) {
+                        console.log(`🎬 Video analysis failed to start: ${result.videoAnalysis.message}`);
+                        // Store the error to show in UI
+                        this.videoAnalysisError = {
+                            error: result.videoAnalysis.error,
+                            message: result.videoAnalysis.message,
+                            details: result.videoAnalysis.details
+                        };
+                    }
                 }
                 
                 return result.data;
@@ -408,10 +419,18 @@ class TumiLabsAnalyzer {
             this.populateMetadataIntelligence(data.metadataIntelligence);
         }
         
-        // Initialize video analysis polling if we have a job ID
+        // Always initialize video analysis section
+        this.initVideoAnalysisSection();
+        
         if (this.videoAnalysisJobId) {
-            this.initVideoAnalysisSection();
+            console.log('🎬 Starting video analysis polling...');
             this.startVideoAnalysisPolling();
+        } else if (this.videoAnalysisError) {
+            console.log('🎬 Showing video analysis error...');
+            this.showVideoAnalysisError(this.videoAnalysisError.message, this.videoAnalysisError.details);
+        } else {
+            console.log('🎬 Video analysis not configured, showing setup message...');
+            this.showVideoAnalysisUnavailable();
         }
     }
 
@@ -899,6 +918,7 @@ class TumiLabsAnalyzer {
         }
         
         this.videoAnalysisJobId = null;
+        this.videoAnalysisError = null;
         
         this.hideCancelButton();
         this.hideRetryButton();
@@ -1415,9 +1435,15 @@ class TumiLabsAnalyzer {
         console.log('✅ Video analysis results displayed successfully');
     }
 
-    showVideoAnalysisError(errorMessage) {
+    showVideoAnalysisError(errorMessage, details = null) {
         const contentContainer = document.getElementById('video-analysis-content');
         if (!contentContainer) return;
+        
+        const detailsHtml = details && process.env.NODE_ENV === 'development' ? 
+            `<details class="error-details">
+                <summary>Technical Details</summary>
+                <pre>${details}</pre>
+            </details>` : '';
         
         contentContainer.innerHTML = `
             <div class="analysis-error">
@@ -1425,6 +1451,7 @@ class TumiLabsAnalyzer {
                 <h4>Video Analysis Failed</h4>
                 <p>${errorMessage}</p>
                 <p class="error-subtitle">The metadata analysis above is still valid and complete.</p>
+                ${detailsHtml}
             </div>
         `;
         
@@ -1435,6 +1462,35 @@ class TumiLabsAnalyzer {
         });
         
         console.error('❌ Video analysis failed:', errorMessage);
+    }
+
+    showVideoAnalysisUnavailable() {
+        const contentContainer = document.getElementById('video-analysis-content');
+        if (!contentContainer) return;
+        
+        contentContainer.innerHTML = `
+            <div class="analysis-placeholder">
+                <div class="placeholder-icon">🔧</div>
+                <h4>Video Analysis Setup Required</h4>
+                <p>Advanced video analysis requires additional configuration:</p>
+                <ul style="text-align: left; max-width: 400px; margin: 1rem auto;">
+                    <li>Google Cloud Video Intelligence API</li>
+                    <li>Google Cloud Storage bucket</li>
+                    <li>Claude AI API access</li>
+                    <li>yt-dlp video downloader</li>
+                </ul>
+                <p class="placeholder-subtitle">See SETUP.md for configuration instructions</p>
+                <p class="error-subtitle">The metadata analysis above provides comprehensive insights without video analysis.</p>
+            </div>
+        `;
+        
+        // Update status to show setup needed
+        this.updateVideoAnalysisDisplay({
+            progress: 0,
+            message: 'Setup required for video analysis'
+        });
+        
+        console.log('🔧 Video analysis requires additional setup');
     }
 // Additional methods for enhanced progress tracking
 // These should be added to the TumiLabsAnalyzer class
