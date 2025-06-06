@@ -8,14 +8,13 @@ const crypto = require('crypto');
 
 class VideoAnalysisService {
     constructor() {
+        // Using Workload Identity Federation - no key files needed
         this.storage = new Storage({
-            projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
-            keyFilename: process.env.GOOGLE_CLOUD_KEY_FILE
+            projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || 'tumi-video-analysis'
         });
         this.bucket = this.storage.bucket(process.env.GOOGLE_CLOUD_STORAGE_BUCKET);
         this.videoClient = new videoIntelligence.VideoIntelligenceServiceClient({
-            projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
-            keyFilename: process.env.GOOGLE_CLOUD_KEY_FILE
+            projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || 'tumi-video-analysis'
         });
         
         this.jobQueue = new Map(); // In-memory job tracking
