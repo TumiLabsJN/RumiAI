@@ -2,12 +2,11 @@
   "name": "tiktok-competitor-analyzer",
   "version": "2.0.0",
   "description": "Intelligent TikTok competitor analysis with AI-powered video insights",
-  "main": "src/js/app.js",
+  "main": "server/server.js",
   "scripts": {
     "start": "node server/server.js",
     "dev": "nodemon server/server.js",
-    "client": "live-server public --port=3001",
-    "build": "webpack --mode production"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": ["tiktok", "competitor-analysis", "ai", "computer-vision", "apify"],
   "author": "TumiLabsJN",
