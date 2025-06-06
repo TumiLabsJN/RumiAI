@@ -192,6 +192,9 @@ class TumiLabsAnalyzer {
             // Add timeout and progress feedback during API call
             const result = await this.fetchWithProgressAndTimeout(username);
             
+            // CRITICAL: Clear any progress intervals before setting final progress
+            this.clearProgressInterval();
+            
             this.updateProgress(30, 'Processing scraped data...', 'step-scraping');
             console.log('✅ Real TikTok data received:', result);
             return result;
@@ -200,10 +203,7 @@ class TumiLabsAnalyzer {
             console.error('❌ TikTok fetch error:', error);
             
             // Clear any lingering progress intervals
-            if (this.progressInterval) {
-                clearInterval(this.progressInterval);
-                this.progressInterval = null;
-            }
+            this.clearProgressInterval();
             
             // Throw the error instead of using mock data
             throw error;
@@ -245,11 +245,8 @@ class TumiLabsAnalyzer {
                 
                 const response = await Promise.race([fetchPromise, timeoutPromise]);
                 
-                // Clear progress interval on success
-                if (this.progressInterval) {
-                    clearInterval(this.progressInterval);
-                    this.progressInterval = null;
-                }
+                // CRITICAL: Clear progress interval immediately on API response
+                this.clearProgressInterval();
                 
                 console.log('📡 API Response status:', response.status);
 
@@ -309,7 +306,7 @@ class TumiLabsAnalyzer {
         let messageIndex = 0;
         
         return setInterval(() => {
-            if (progressStep < 29.5) {
+            if (progressStep < 29.5 && this.progressInterval) { // Check if interval should still be running
                 progressStep += 0.5;
                 const message = messages[messageIndex % messages.length];
                 this.updateProgress(Math.floor(progressStep), message, 'step-scraping');
@@ -877,6 +874,13 @@ class TumiLabsAnalyzer {
     }
 
     updateProgress(percentage, message, activeStep) {
+        // Ensure we're not overriding a higher percentage (prevent regression)
+        const currentPercentage = parseInt(document.getElementById('progress-percentage').textContent) || 0;
+        if (percentage < currentPercentage && currentPercentage > 30) {
+            console.log(`⚠️ Prevented progress regression: ${percentage}% < ${currentPercentage}%`);
+            return;
+        }
+        
         document.getElementById('progress-percentage').textContent = `${percentage}%`;
         
         // Add spinner for long operations
@@ -888,6 +892,16 @@ class TumiLabsAnalyzer {
         
         if (activeStep) {
             this.activateStep(activeStep);
+        }
+        
+        console.log(`📊 Progress: ${percentage}% - ${message}`);
+    }
+    
+    clearProgressInterval() {
+        if (this.progressInterval) {
+            clearInterval(this.progressInterval);
+            this.progressInterval = null;
+            console.log('🧹 Progress interval cleared');
         }
     }
 
