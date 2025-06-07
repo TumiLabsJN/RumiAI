@@ -8,7 +8,13 @@
     "dev": "nodemon server/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["tiktok", "competitor-analysis", "ai", "computer-vision", "apify"],
+  "keywords": [
+    "tiktok",
+    "competitor-analysis",
+    "ai",
+    "computer-vision",
+    "apify"
+  ],
   "author": "TumiLabsJN",
   "license": "MIT",
   "devDependencies": {
@@ -18,17 +24,19 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "apify-client": "^2.7.1",
-    "chart.js": "^4.4.0",
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "axios": "^1.5.0",
-    "moment": "^2.29.4",
-    "jspdf": "^2.5.1",
     "@google-cloud/storage": "^7.7.0",
     "@google-cloud/video-intelligence": "^5.0.0",
+    "apify-client": "^2.7.1",
+    "axios": "^1.5.0",
+    "chart.js": "^4.4.0",
+    "cheerio": "^1.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
     "express-rate-limit": "^7.1.5",
+    "jspdf": "^2.5.1",
+    "moment": "^2.29.4",
+    "puppeteer-core": "^24.10.0",
     "ytdl-core": "^4.11.5"
   }
 }
