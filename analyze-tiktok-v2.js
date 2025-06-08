@@ -7,7 +7,7 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 // Now load other modules
 const { ApifyClient } = require('apify-client');
 const { Storage } = require('@google-cloud/storage');
-const videoIntelligence = require('@google-cloud/video-intelligence');
+// Removed video intelligence SDK - using direct HTTP API calls
 const axios = require('axios');
 const fs = require('fs').promises;
 const { createWriteStream } = require('fs');
@@ -23,14 +23,11 @@ class TikTokVideoAnalyzer {
             token: process.env.APIFY_TOKEN
         });
         
-        // Initialize Google Cloud clients
+        // Initialize Google Cloud Storage client
         this.storage = new Storage({
             projectId: 'tumi-video-analysis'
         });
         this.bucket = this.storage.bucket(process.env.GOOGLE_CLOUD_STORAGE_BUCKET || 'tiktok-video-analysis-jorge');
-        this.videoClient = new videoIntelligence.VideoIntelligenceServiceClient({
-            projectId: 'tumi-video-analysis'
-        });
         
         this.tempDir = path.join(__dirname, 'temp', 'videos');
         this.actorId = 'clockworks/tiktok-scraper';
@@ -38,6 +35,51 @@ class TikTokVideoAnalyzer {
 
     async ensureTempDirectory() {
         await fs.mkdir(this.tempDir, { recursive: true });
+    }
+
+    async getAccessToken() {
+        console.log(`🔑 Fetching access token from gcloud CLI...`);
+        
+        return new Promise((resolve, reject) => {
+            const { spawn } = require('child_process');
+            const childProcess = spawn('gcloud', ['auth', 'print-access-token'], {
+                stdio: ['inherit', 'pipe', 'pipe']
+            });
+            
+            let stdout = '';
+            let stderr = '';
+            
+            childProcess.stdout.on('data', (data) => {
+                stdout += data.toString();
+            });
+            
+            childProcess.stderr.on('data', (data) => {
+                stderr += data.toString();
+            });
+            
+            childProcess.on('close', (code) => {
+                if (code === 0) {
+                    const token = stdout.trim();
+                    if (token && token.length > 0) {
+                        console.log(`✅ Access token retrieved successfully`);
+                        console.log(`🔑 Token preview: ${token.substring(0, 20)}...`);
+                        resolve(token);
+                    } else {
+                        console.error(`❌ Empty token received from gcloud`);
+                        reject(new Error('Empty access token received from gcloud'));
+                    }
+                } else {
+                    console.error(`❌ gcloud auth failed with exit code: ${code}`);
+                    console.error(`📊 stderr: ${stderr.trim()}`);
+                    reject(new Error(`Failed to get access token: ${stderr.trim() || 'gcloud command failed'}`));
+                }
+            });
+            
+            childProcess.on('error', (error) => {
+                console.error(`❌ Failed to spawn gcloud command: ${error.message}`);
+                reject(new Error(`Failed to spawn gcloud: ${error.message}`));
+            });
+        });
     }
 
     async fetchTikTokVideosWithApify(username, retries = 2) {
@@ -359,8 +401,6 @@ class TikTokVideoAnalyzer {
     }
 
     async uploadToGCS(localPath, gcsPath) {
-        console.log(`☁️  Uploading to GCS using Node.js SDK...`);
-        
         const bucketName = process.env.GOOGLE_CLOUD_STORAGE_BUCKET || 'tiktok-video-analysis-jorge';
         const gcsUri = `gs://${bucketName}/${gcsPath}`;
         
@@ -372,28 +412,84 @@ class TikTokVideoAnalyzer {
             const stats = await fs.stat(localPath);
             console.log(`📊 File size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
             
-            // Upload using Node.js SDK
-            console.log(`📤 Starting upload...`);
-            const [file] = await this.bucket.upload(localPath, {
-                destination: gcsPath,
-                metadata: {
-                    contentType: 'video/mp4',
+            // Try Node.js SDK first
+            console.log(`☁️  Uploading to GCS using Node.js SDK...`);
+            try {
+                console.log(`📤 Starting upload...`);
+                const [file] = await this.bucket.upload(localPath, {
+                    destination: gcsPath,
                     metadata: {
-                        uploadedAt: new Date().toISOString(),
-                        originalFilename: path.basename(localPath),
-                        uploadMethod: 'nodejs-sdk'
-                    }
-                },
-                resumable: true, // Enable resumable uploads for large files
-                validation: 'crc32c' // Enable data integrity validation
-            });
-            
-            console.log(`✅ Upload successful`);
-            console.log(`✅ Uploaded: ${gcsUri}`);
-            console.log(`📊 GCS file: ${file.name}`);
-            console.log(`🔒 Generation: ${file.generation}`);
-            
-            return gcsUri;
+                        contentType: 'video/mp4',
+                        metadata: {
+                            uploadedAt: new Date().toISOString(),
+                            originalFilename: path.basename(localPath),
+                            uploadMethod: 'nodejs-sdk'
+                        }
+                    },
+                    resumable: true, // Enable resumable uploads for large files
+                    validation: 'crc32c' // Enable data integrity validation
+                });
+                
+                console.log(`✅ Upload successful`);
+                console.log(`✅ Uploaded: ${gcsUri}`);
+                console.log(`📊 GCS file: ${file.name}`);
+                console.log(`🔒 Generation: ${file.generation}`);
+                
+                return gcsUri;
+                
+            } catch (sdkError) {
+                console.error(`❌ SDK upload failed: ${sdkError.message}`);
+                console.log(`🔄 Falling back to gcloud CLI...`);
+                
+                // Fallback to gcloud CLI with proper escaping
+                const { spawn } = require('child_process');
+                
+                // Properly escape paths for shell execution
+                const escapedLocalPath = `"${localPath.replace(/"/g, '\\"')}"`;
+                const escapedGcsUri = `"${gcsUri.replace(/"/g, '\\"')}"`;
+                
+                const command = 'gcloud';
+                const args = ['storage', 'cp', escapedLocalPath, escapedGcsUri, '--quiet'];
+                
+                console.log(`📤 Executing: ${command} ${args.join(' ')}`);
+                
+                return new Promise((resolve, reject) => {
+                    const childProcess = spawn(command, args, { 
+                        stdio: ['inherit', 'pipe', 'pipe'],
+                        shell: true 
+                    });
+                    
+                    let stdout = '';
+                    let stderr = '';
+                    
+                    childProcess.stdout.on('data', (data) => {
+                        stdout += data.toString();
+                        console.log(`📤 gcloud stdout: ${data.toString().trim()}`);
+                    });
+                    
+                    childProcess.stderr.on('data', (data) => {
+                        stderr += data.toString();
+                        console.log(`📤 gcloud stderr: ${data.toString().trim()}`);
+                    });
+                    
+                    childProcess.on('close', (code) => {
+                        if (code === 0) {
+                            console.log(`✅ CLI upload successful`);
+                            console.log(`✅ Uploaded: ${gcsUri}`);
+                            resolve(gcsUri);
+                        } else {
+                            console.error(`❌ CLI upload failed with code: ${code}`);
+                            console.error(`📊 stderr: ${stderr}`);
+                            reject(new Error(`gcloud storage cp failed with exit code ${code}: ${stderr}`));
+                        }
+                    });
+                    
+                    childProcess.on('error', (error) => {
+                        console.error(`❌ CLI spawn error: ${error.message}`);
+                        reject(new Error(`Failed to spawn gcloud command: ${error.message}`));
+                    });
+                });
+            }
             
         } catch (error) {
             console.error(`❌ Upload failed: ${error.message}`);
@@ -411,9 +507,9 @@ class TikTokVideoAnalyzer {
     async analyzeWithVideoIntelligence(gcsUri) {
         console.log(`🔍 Starting video analysis...`);
         console.log(`📹 Video URI: ${gcsUri}`);
-        console.log(`🔬 Using Video Intelligence Node.js SDK...`);
+        console.log(`🔬 Using Video Intelligence HTTP API...`);
         
-        const request = {
+        const requestBody = {
             inputUri: gcsUri,
             features: [
                 'LABEL_DETECTION',
@@ -428,45 +524,256 @@ class TikTokVideoAnalyzer {
             }
         };
 
-        console.log(`📊 Analysis request:`, JSON.stringify(request, null, 2));
+        console.log(`📊 Analysis request:`, JSON.stringify(requestBody, null, 2));
         
         try {
-            console.log(`📤 Submitting analysis request...`);
-            const [operation] = await this.videoClient.annotateVideo(request);
-            console.log(`⏳ Analysis operation started: ${operation.name}`);
-            console.log(`⏳ Waiting for completion (this may take 30-60 seconds)...`);
+            console.log(`📤 Submitting HTTP request to Video Intelligence API...`);
             
-            const [operationResult] = await operation.promise();
-            console.log(`✅ Video Intelligence analysis complete!`);
+            // Get dynamic access token
+            const accessToken = await this.getAccessToken();
             
-            const annotations = operationResult.annotationResults[0];
+            const response = await axios.post(
+                'https://videointelligence.googleapis.com/v1/videos:annotate',
+                requestBody,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json',
+                        'x-goog-user-project': 'tumi-video-analysis'
+                    }
+                }
+            );
             
-            // Log detailed results summary
-            console.log(`📊 Analysis results summary:`);
-            console.log(`   - Labels detected: ${annotations.segmentLabelAnnotations?.length || 0}`);
-            console.log(`   - Shots detected: ${annotations.shotAnnotations?.length || 0}`);
-            console.log(`   - Explicit content frames: ${annotations.explicitAnnotation?.frames?.length || 0}`);
+            console.log(`✅ Video Intelligence analysis request submitted!`);
+            console.log(`⏳ Operation started: ${response.data.name}`);
             
-            if (annotations.segmentLabelAnnotations?.length > 0) {
-                const topLabels = annotations.segmentLabelAnnotations
-                    .slice(0, 3)
-                    .map(label => label.entity.description)
-                    .join(', ');
-                console.log(`   - Top labels: ${topLabels}`);
-            }
+            // Save the response to a local file
+            const responseFilename = 'manual_analysis_result.json';
+            await fs.writeFile(responseFilename, JSON.stringify(response.data, null, 2));
+            console.log(`💾 Response saved to: ${responseFilename}`);
+            console.log(`📊 Operation name: ${response.data.name}`);
             
-            return annotations;
+            // Poll for final results
+            console.log(`🔄 Starting polling for final results...`);
+            const finalResults = await this.pollOperationResults(response.data.name);
+            
+            // Return the final annotation results for compatibility with existing code
+            return finalResults.response?.annotationResults?.[0] || {
+                note: 'Analysis completed but no annotation results found'
+            };
             
         } catch (error) {
             console.error(`❌ Video Intelligence analysis failed: ${error.message}`);
+            
+            // Check if it's a token-related error
+            if (error.message.includes('access token') || error.message.includes('gcloud')) {
+                console.error(`🔑 Token fetch failed - ensure gcloud is authenticated and WIF is configured`);
+                console.error(`💡 Try running: gcloud auth login --update-adc`);
+            }
+            
+            if (error.response) {
+                console.error(`📊 HTTP Status: ${error.response.status}`);
+                console.error(`📊 Response data:`, error.response.data);
+                
+                if (error.response.status === 401) {
+                    console.error(`🔑 Authentication failed - token may be invalid or expired`);
+                }
+            }
+            
             console.error(`📊 Error details:`, {
-                code: error.code,
                 message: error.message,
                 gcsUri,
-                requestFeatures: request.features
+                requestFeatures: requestBody.features
             });
+            
+            // Save error state to file for debugging
+            try {
+                const errorFilename = 'analysis_error.json';
+                await fs.writeFile(errorFilename, JSON.stringify({
+                    error: error.message,
+                    timestamp: new Date().toISOString(),
+                    gcsUri,
+                    requestFeatures: requestBody.features,
+                    httpStatus: error.response?.status,
+                    responseData: error.response?.data
+                }, null, 2));
+                console.log(`💾 Error details saved to: ${errorFilename}`);
+            } catch (saveError) {
+                console.error(`⚠️  Could not save error details: ${saveError.message}`);
+            }
+            
             throw error;
         }
+    }
+
+    async pollOperationResults(operationName) {
+        console.log(`🔄 Starting operation polling...`);
+        console.log(`📊 Operation: ${operationName}`);
+        
+        const pollingUrl = `https://videointelligence.googleapis.com/v1/${operationName}`;
+        console.log(`🔗 Polling URL: ${pollingUrl}`);
+        
+        let attempt = 0;
+        const maxAttempts = 120; // 10 minutes max (120 * 5 seconds)
+        
+        while (attempt < maxAttempts) {
+            attempt++;
+            console.log(`⏳ Polling attempt ${attempt}/${maxAttempts}...`);
+            
+            try {
+                // Get fresh access token for each polling request
+                const accessToken = await this.getAccessToken();
+                
+                const response = await axios.get(pollingUrl, {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json',
+                        'x-goog-user-project': 'tumi-video-analysis'
+                    }
+                });
+                
+                console.log(`📊 Operation status: ${response.data.done ? 'COMPLETED' : 'IN_PROGRESS'}`);
+                
+                if (response.data.done) {
+                    console.log(`✅ Analysis operation completed!`);
+                    
+                    // Save final results to file
+                    const finalResultsFilename = 'analysis_results_final.json';
+                    await fs.writeFile(finalResultsFilename, JSON.stringify(response.data, null, 2));
+                    console.log(`💾 Final results saved to: ${finalResultsFilename}`);
+                    
+                    // Extract and log structured summary
+                    this.logAnalysisSummary(response.data);
+                    
+                    return response.data;
+                }
+                
+                // Wait 5 seconds before next poll
+                console.log(`⏳ Waiting 5 seconds before next poll...`);
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                
+            } catch (error) {
+                console.error(`❌ Polling attempt ${attempt} failed: ${error.message}`);
+                
+                // Check if it's a token-related error
+                if (error.message.includes('access token') || error.message.includes('gcloud')) {
+                    console.error(`🔑 Token fetch failed during polling - retrying...`);
+                }
+                
+                if (error.response) {
+                    console.error(`📊 HTTP Status: ${error.response.status}`);
+                    console.error(`📊 Response data:`, error.response.data);
+                    
+                    if (error.response.status === 401) {
+                        console.error(`🔑 Authentication failed during polling - will retry with fresh token`);
+                    }
+                }
+                
+                if (attempt >= maxAttempts) {
+                    // Save final polling error
+                    try {
+                        const pollingErrorFilename = 'polling_error.json';
+                        await fs.writeFile(pollingErrorFilename, JSON.stringify({
+                            error: error.message,
+                            timestamp: new Date().toISOString(),
+                            operationName,
+                            pollingUrl,
+                            attempts: attempt,
+                            httpStatus: error.response?.status,
+                            responseData: error.response?.data
+                        }, null, 2));
+                        console.log(`💾 Polling error details saved to: ${pollingErrorFilename}`);
+                    } catch (saveError) {
+                        console.error(`⚠️  Could not save polling error details: ${saveError.message}`);
+                    }
+                    
+                    throw new Error(`Operation polling failed after ${maxAttempts} attempts: ${error.message}`);
+                }
+                
+                // Wait 5 seconds before retry
+                console.log(`⏳ Waiting 5 seconds before retry...`);
+                await new Promise(resolve => setTimeout(resolve, 5000));
+            }
+        }
+        
+        throw new Error(`Operation polling timed out after ${maxAttempts} attempts`);
+    }
+
+    logAnalysisSummary(operationResult) {
+        console.log('\n' + '='.repeat(80));
+        console.log('🎬 VIDEO INTELLIGENCE ANALYSIS SUMMARY');
+        console.log('='.repeat(80));
+        
+        if (operationResult.error) {
+            console.log(`❌ Analysis failed: ${operationResult.error.message}`);
+            return;
+        }
+        
+        const annotations = operationResult.response?.annotationResults?.[0];
+        if (!annotations) {
+            console.log(`⚠️  No annotation results found`);
+            return;
+        }
+        
+        // Top 5-10 segment labels with confidence scores from segments
+        console.log('\n🏷️  TOP DETECTED LABELS:');
+        if (annotations.segmentLabelAnnotations?.length > 0) {
+            // Extract labels with valid segments and confidence scores
+            const labelsWithConfidence = annotations.segmentLabelAnnotations
+                .map(label => {
+                    // Check if segments array exists and has at least one segment
+                    if (!label.segments || label.segments.length === 0) {
+                        return null; // Skip labels without segments
+                    }
+                    
+                    const confidence = label.segments[0].confidence || 0;
+                    return {
+                        description: label.entity.description,
+                        confidence: confidence
+                    };
+                })
+                .filter(label => label !== null) // Remove null entries (empty segments)
+                .sort((a, b) => b.confidence - a.confidence) // Sort by confidence descending
+                .slice(0, 10); // Take top 10
+            
+            if (labelsWithConfidence.length > 0) {
+                const topLabels = labelsWithConfidence.map((label, index) => {
+                    const confidencePercent = (label.confidence * 100).toFixed(1);
+                    return `   ${index + 1}. ${label.description} (${confidencePercent}% confidence)`;
+                });
+                console.log(topLabels.join('\n'));
+            } else {
+                console.log('   ❌ No labels with valid segments detected');
+            }
+        } else {
+            console.log('   ❌ No labels detected');
+        }
+        
+        // Shot annotations
+        console.log('\n🎬 SHOT ANALYSIS:');
+        if (annotations.shotAnnotations?.length > 0) {
+            console.log(`   ✅ Shots detected: ${annotations.shotAnnotations.length}`);
+        } else {
+            console.log('   ❌ No shot changes detected');
+        }
+        
+        // Explicit content
+        console.log('\n⚠️  CONTENT MODERATION:');
+        if (annotations.explicitAnnotation) {
+            const explicitFrames = annotations.explicitAnnotation.frames?.length || 0;
+            const flaggedFrames = annotations.explicitAnnotation.frames?.filter(f => 
+                f.pornographyLikelihood === 'LIKELY' || 
+                f.pornographyLikelihood === 'VERY_LIKELY'
+            ).length || 0;
+            
+            console.log(`   ✅ Explicit content analysis completed`);
+            console.log(`   📊 Total frames analyzed: ${explicitFrames}`);
+            console.log(`   ⚠️  Flagged frames: ${flaggedFrames}`);
+        } else {
+            console.log('   ❌ No explicit content analysis available');
+        }
+        
+        console.log('\n' + '='.repeat(80) + '\n');
     }
 
     formatResults(video, analysisResults) {
