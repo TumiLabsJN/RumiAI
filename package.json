@@ -1,0 +1,44 @@
+{
+  "name": "tiktok-competitor-analyzer",
+  "version": "2.0.0",
+  "description": "Intelligent TikTok competitor analysis with AI-powered video insights",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "nodemon server/server.js",
+    "validate": "node validate-setup.js",
+    "start:safe": "npm run validate && npm start",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "tiktok",
+    "competitor-analysis",
+    "ai",
+    "computer-vision",
+    "apify"
+  ],
+  "author": "TumiLabsJN",
+  "license": "MIT",
+  "devDependencies": {
+    "live-server": "^1.2.2",
+    "nodemon": "^3.0.1",
+    "webpack": "^5.88.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "@google-cloud/storage": "^7.7.0",
+    "@google-cloud/video-intelligence": "^5.0.0",
+    "apify-client": "^2.7.1",
+    "axios": "^1.5.0",
+    "chart.js": "^4.4.0",
+    "cheerio": "^1.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "jspdf": "^2.5.1",
+    "moment": "^2.29.4",
+    "puppeteer-core": "^24.10.0",
+    "ytdl-core": "^4.11.5"
+  }
+}
