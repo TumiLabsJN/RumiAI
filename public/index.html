@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GerryOS - TikTok Performance Analytics</title>
+    <link rel="icon" type="image/jpeg" href="images/Symbol1.jpg">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header class="tumi-header">
+        <div class="header-content">
+            <div class="logo-section">
+                <img src="images/Logo1.jpg" alt="GerryOS" class="logo" onerror="this.src='images/Symbol1.jpg'">
+                <div class="brand-text">
+                    <h1>GerryOS</h1>
+                    <span class="tagline">TikTok Performance Analytics</span>
+                </div>
+            </div>
+            <div class="header-stats">
+                <div class="stat">
+                    <i class="fas fa-video"></i>
+                    <span>AI-Powered Analysis</span>
+                </div>
+                <div class="stat">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Professional Reports</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <!-- Analysis Input Section -->
+        <section class="analysis-input">
+            <div class="card primary-card">
+                <div class="card-header">
+                    <h2><i class="fas fa-search"></i> Start Performance Analysis</h2>
+                    <p>Enter a TikTok handle to analyze their posting patterns and engagement metrics</p>
+                </div>
+                <form id="analysis-form" class="analysis-form">
+                    <div class="input-group">
+                        <span class="input-prefix">@</span>
+                        <input type="text" id="tiktok-username" placeholder="username" required>
+                        <button type="submit" class="analyze-btn">
+                            <i class="fas fa-chart-bar"></i>
+                            Analyze Performance
+                        </button>
+                    </div>
+                    <div class="analysis-options">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="include-products" checked>
+                            <span class="checkmark"></span>
+                            Product Detection
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="include-pets" checked>
+                            <span class="checkmark"></span>
+                            Pet Analysis
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="include-text" checked>
+                            <span class="checkmark"></span>
+                            Text Extraction
+                        </label>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- Analysis Progress -->
+        <section id="analysis-progress" class="analysis-progress hidden">
+            <div class="card">
+                <div class="progress-content">
+                    <div class="progress-header">
+                        <h3 id="progress-title">Initializing Analysis...</h3>
+                        <div class="progress-controls">
+                            <span id="progress-percentage">0%</span>
+                            <button id="cancel-analysis" class="cancel-btn hidden">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                            <button id="retry-analysis" class="retry-btn hidden">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill"></div>
+                    </div>
+                    <div class="progress-steps">
+                        <div class="step active" id="step-scraping">
+                            <i class="fas fa-download"></i>
+                            <span>Data Collection</span>
+                        </div>
+                        <div class="step" id="step-selecting">
+                            <i class="fas fa-filter"></i>
+                            <span>Video Processing</span>
+                        </div>
+                        <div class="step" id="step-analyzing">
+                            <i class="fas fa-brain"></i>
+                            <span>Intelligence Analysis</span>
+                        </div>
+                        <div class="step" id="step-reporting">
+                            <i class="fas fa-file-pdf"></i>
+                            <span>Report Generation</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results Dashboard -->
+        <section id="results-dashboard" class="results-dashboard hidden">
+            <!-- Historical Analysis Notice (will be populated if needed) -->
+            <div id="historical-notice" class="historical-notice hidden">
+                <!-- Professional timeframe messaging will be populated here -->
+            </div>
+
+
+            <!-- Enterprise Metadata Intelligence -->
+            <div class="card metadata-card">
+                <div id="metadata-intelligence" class="metadata-intelligence">
+                    <!-- Comprehensive metadata analysis will be populated here -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="tumi-footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <strong>Tumi Labs</strong> - Intelligent Social Media Analytics
+            </div>
+            <div class="footer-links">
+                <a href="#" class="footer-link">Privacy Policy</a>
+                <a href="#" class="footer-link">Terms of Service</a>
+                <a href="#" class="footer-link">Contact Support</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

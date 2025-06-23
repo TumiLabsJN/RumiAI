@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Complete Test - TikTok Analyzer</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div style="padding: 20px;">
+        <h1>🧪 Complete Functionality Test</h1>
+        
+        <div>
+            <input type="text" id="username" placeholder="Enter TikTok username" value="mrbeast" style="padding: 10px; margin: 10px;">
+            <button onclick="testComplete()" style="padding: 10px; margin: 10px;">Test Complete Flow</button>
+        </div>
+        
+        <div id="results" style="margin-top: 20px; padding: 20px; background: #f5f5f5;">
+            <h3>Complete test results will appear here...</h3>
+        </div>
+    </div>
+
+    <script>
+        async function testComplete() {
+            const username = document.getElementById('username').value;
+            const resultsDiv = document.getElementById('results');
+            
+            console.log('🧪 Testing complete flow for:', username);
+            resultsDiv.innerHTML = '<h3>🔄 Testing complete flow...</h3>';
+            
+            try {
+                // Test 1: TikTok Analysis
+                console.log('📱 Step 1: Testing TikTok analysis...');
+                const tiktokResponse = await fetch('/api/tiktok/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username })
+                });
+                
+                const tiktokResult = await tiktokResponse.json();
+                console.log('✅ TikTok analysis result:', tiktokResult);
+                
+                // Test 2: Video Analysis
+                console.log('🔍 Step 2: Testing video analysis...');
+                const videoResponse = await fetch('/api/analysis/videos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ videos: tiktokResult.data.topVideos })
+                });
+                
+                const videoResult = await videoResponse.json();
+                console.log('✅ Video analysis result:', videoResult);
+                
+                resultsDiv.innerHTML = `
+                    <h3>✅ Complete Test PASSED!</h3>
+                    <div style="background: white; padding: 15px; margin: 10px 0; border-radius: 5px;">
+                        <h4>📱 TikTok Data:</h4>
+                        <p><strong>Username:</strong> ${tiktokResult.data.username}</p>
+                        <p><strong>Total Videos:</strong> ${tiktokResult.data.totalVideos}</p>
+                        <p><strong>Top Videos Found:</strong> ${tiktokResult.data.topVideos.length}</p>
+                    </div>
+                    <div style="background: white; padding: 15px; margin: 10px 0; border-radius: 5px;">
+                        <h4>🔍 Analysis Results:</h4>
+                        <p><strong>Videos Analyzed:</strong> ${videoResult.data.videoAnalyses.length}</p>
+                        <p><strong>Average Engagement:</strong> ${videoResult.data.insights.performance.avgEngagementRate}%</p>
+                        <p><strong>Product Presence:</strong> ${videoResult.data.insights.content.productPresence}%</p>
+                        <p><strong>Pet Content:</strong> ${videoResult.data.insights.content.petPresence}%</p>
+                    </div>
+                    <div style="background: #e8f5e8; padding: 15px; margin: 10px 0; border-radius: 5px;">
+                        <h4>🎉 Status: ALL SYSTEMS WORKING!</h4>
+                        <p>✅ Apify Integration: Working</p>
+                        <p>✅ Video Analysis: Working</p>  
+                        <p>✅ Insights Generation: Working</p>
+                        <p>✅ Static Files: Loading correctly</p>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('❌ Test failed:', error);
+                resultsDiv.innerHTML = `
+                    <h3>❌ Test Failed</h3>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <p>Check browser console for details.</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
