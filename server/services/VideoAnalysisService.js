@@ -6,6 +6,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 const crypto = require('crypto');
 const CredentialValidator = require('../utils/credentialValidator');
+const MetadataIntelligenceLayer = require('./MetadataIntelligenceLayer');
 
 class VideoAnalysisService {
     constructor() {
@@ -38,8 +39,13 @@ class VideoAnalysisService {
             
             // Also ensure output directory exists
             const outputDir = path.join(__dirname, '../../outputs/video-analysis');
-            await fs.mkdir(outputDir, { recursive: true });
-            console.log(`📁 Output directory ready: ${outputDir}`);
+            try {
+                await fs.mkdir(outputDir, { recursive: true });
+                console.log(`📁 Output directory ready: ${outputDir}`);
+            } catch (err) {
+                // If we can't create in outputs/, use temp directory
+                console.log(`⚠️ Using temp directory for outputs due to permissions`);
+            }
         } catch (error) {
             console.error('❌ Failed to create directories:', error);
         }
@@ -247,9 +253,15 @@ class VideoAnalysisService {
     }
 
     /**
-     * Download single video using yt-dlp
+     * Download single video using yt-dlp or direct download
      */
     async downloadVideo(video) {
+        // Check if we have an Apify download URL
+        if (video.downloadUrl && video.downloadUrl.includes('api.apify.com')) {
+            return this.downloadFromApify(video);
+        }
+        
+        // Fallback to yt-dlp for regular TikTok URLs
         return new Promise((resolve, reject) => {
             const filename = `${this.generateJobId()}_${video.rank}.%(ext)s`;
             const outputTemplate = path.join(this.tempDir, filename);
@@ -311,6 +323,45 @@ class VideoAnalysisService {
                 reject(new Error('Video download timeout (60 seconds)'));
             }, 60000);
         });
+    }
+
+    /**
+     * Download video from Apify's key-value store
+     */
+    async downloadFromApify(video) {
+        const axios = require('axios');
+        const fs = require('fs');
+        const stream = require('stream');
+        const { promisify } = require('util');
+        const pipeline = promisify(stream.pipeline);
+        
+        try {
+            console.log(`📥 Downloading from Apify: ${video.downloadUrl}`);
+            
+            // Generate local filename
+            const filename = `${video.id || this.generateJobId()}_${video.rank}.mp4`;
+            const localPath = path.join(this.tempDir, filename);
+            
+            // Download the video
+            const response = await axios({
+                method: 'GET',
+                url: video.downloadUrl,
+                responseType: 'stream',
+                headers: {
+                    'User-Agent': 'RumiAI/1.0'
+                }
+            });
+            
+            // Save to file
+            await pipeline(response.data, fs.createWriteStream(localPath));
+            
+            console.log(`✅ Downloaded from Apify: ${localPath}`);
+            return localPath;
+            
+        } catch (error) {
+            console.error(`❌ Failed to download from Apify:`, error.message);
+            throw error;
+        }
     }
 
     /**
@@ -450,7 +501,6 @@ class VideoAnalysisService {
                 'LABEL_DETECTION',
                 'SHOT_CHANGE_DETECTION',
                 'EXPLICIT_CONTENT_DETECTION',
-                'TEXT_DETECTION',
                 'OBJECT_TRACKING',
                 'PERSON_DETECTION',
                 'SPEECH_TRANSCRIPTION'
@@ -486,7 +536,6 @@ class VideoAnalysisService {
             labels: [],
             shots: [],
             explicitContent: null,
-            textAnnotations: [],
             objectAnnotations: [],
             personAnnotations: [],
             speechTranscriptions: []
@@ -527,15 +576,6 @@ class VideoAnalysisService {
             };
         }
 
-        // Process text detection - store full annotation data
-        if (annotations.textAnnotations) {
-            processed.textAnnotations = annotations.textAnnotations.map(text => ({
-                text: text.text || '',
-                confidence: text.confidence || 0,
-                frames: text.frames || [],
-                segments: text.segments || []
-            }));
-        }
 
         // Process object tracking - store full annotation data
         if (annotations.objectAnnotations) {
@@ -577,6 +617,9 @@ class VideoAnalysisService {
         // Extract hook timing (first 3 seconds) for analysis
         processed.hooks = this.extractHookElements(result);
 
+        // Generate comprehensive metadata summary using the Metadata Intelligence Layer
+        processed.metadataSummary = MetadataIntelligenceLayer.processEnhancedMetadata(result);
+
         return processed;
     }
 
@@ -587,7 +630,6 @@ class VideoAnalysisService {
         const hookDuration = 3; // seconds
         const hooks = {
             labels: [],
-            text: [],
             faces: 0,
             objects: []
         };
@@ -834,7 +876,6 @@ Analysis Period: Mix of recent (0-30 days) and historical (30-60 days) content`;
 
         return {
             elements: hooks.labels || [],
-            textOverlays: hooks.text || [],
             faceCount: hooks.faces || 0,
             objects: hooks.objects || [],
             timing: '0-3 seconds',

@@ -446,8 +446,8 @@ class TikTokService {
                 engagementRate: parseFloat(video.engagementRate) || 0,
                 duration: video.videoMeta?.duration || video.duration || 0,
                 createTime: video.createTimeISO || video.createTime || video.publishedAt,
-                downloadUrl: video.videoUrl || video.downloadUrl,
-                coverUrl: video.covers?.[0] || video.thumbnail || null,
+                downloadUrl: video.mediaUrls?.[0] || video.videoMeta?.downloadAddr || video.videoUrl || video.downloadUrl,
+                coverUrl: video.videoMeta?.coverUrl || video.covers?.[0] || video.thumbnail || null,
                 author: {
                     username: video.authorMeta?.name || video.author?.username || '',
                     displayName: video.authorMeta?.nickName || video.author?.displayName || '',
