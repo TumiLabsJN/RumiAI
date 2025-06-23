@@ -35,8 +35,13 @@ class VideoAnalysisService {
         try {
             await fs.mkdir(this.tempDir, { recursive: true });
             console.log(`📁 Temp directory ready: ${this.tempDir}`);
+            
+            // Also ensure output directory exists
+            const outputDir = path.join(__dirname, '../../outputs/video-analysis');
+            await fs.mkdir(outputDir, { recursive: true });
+            console.log(`📁 Output directory ready: ${outputDir}`);
         } catch (error) {
-            console.error('❌ Failed to create temp directory:', error);
+            console.error('❌ Failed to create directories:', error);
         }
     }
 
@@ -415,7 +420,9 @@ class VideoAnalysisService {
             });
 
             try {
-                const analysis = await this.analyzeVideoWithGoogleAI(video.gcsUri);
+                // Generate video ID from video data
+                const videoId = video.id || `${video.username || 'unknown'}_${video.rank || i}`;
+                const analysis = await this.analyzeVideoWithGoogleAI(video.gcsUri, videoId);
                 results.push({
                     ...video,
                     analysis
@@ -436,15 +443,17 @@ class VideoAnalysisService {
     /**
      * Analyze single video with Google Video Intelligence
      */
-    async analyzeVideoWithGoogleAI(gcsUri) {
+    async analyzeVideoWithGoogleAI(gcsUri, videoId = null) {
         const request = {
             inputUri: gcsUri,
             features: [
                 'LABEL_DETECTION',
-                'SPEECH_TRANSCRIPTION',
+                'SHOT_CHANGE_DETECTION',
+                'EXPLICIT_CONTENT_DETECTION',
                 'TEXT_DETECTION',
                 'OBJECT_TRACKING',
-                'FACE_DETECTION'
+                'PERSON_DETECTION',
+                'SPEECH_TRANSCRIPTION'
             ],
             videoContext: {
                 speechTranscriptionConfig: {
@@ -458,7 +467,15 @@ class VideoAnalysisService {
         const [operation] = await this.videoClient.annotateVideo(request);
         const [result] = await operation.promise();
         
-        return this.processVideoIntelligenceResult(result);
+        // Process the result
+        const processed = this.processVideoIntelligenceResult(result);
+        
+        // Save the raw and processed results if videoId is provided
+        if (videoId) {
+            await this.saveVideoAnalysisResults(videoId, result, processed);
+        }
+        
+        return processed;
     }
 
     /**
@@ -467,40 +484,97 @@ class VideoAnalysisService {
     processVideoIntelligenceResult(result) {
         const processed = {
             labels: [],
-            transcript: '',
-            textDetections: [],
-            objects: [],
-            faces: [],
-            hooks: [],
-            metadata: {}
+            shots: [],
+            explicitContent: null,
+            textAnnotations: [],
+            objectAnnotations: [],
+            personAnnotations: [],
+            speechTranscriptions: []
         };
 
+        // Safely access annotation results
+        const annotations = result.annotationResults && result.annotationResults[0] ? result.annotationResults[0] : {};
+
         // Process label annotations
-        if (result.annotationResults[0].segmentLabelAnnotations) {
-            processed.labels = result.annotationResults[0].segmentLabelAnnotations.map(label => ({
+        if (annotations.segmentLabelAnnotations) {
+            processed.labels = annotations.segmentLabelAnnotations.map(label => ({
                 description: label.entity.description,
-                confidence: label.segments[0].confidence
+                confidence: label.segments[0].confidence,
+                segments: label.segments
             }));
         }
 
-        // Process speech transcription
-        if (result.annotationResults[0].speechTranscriptions) {
-            const transcripts = result.annotationResults[0].speechTranscriptions
-                .map(transcription => transcription.alternatives[0].transcript)
+        // Process shot label annotations (additional labels per shot)
+        if (annotations.shotLabelAnnotations) {
+            processed.shotLabels = annotations.shotLabelAnnotations.map(label => ({
+                description: label.entity.description,
+                segments: label.segments
+            }));
+        }
+
+        // Process shot change detection
+        if (annotations.shotAnnotations) {
+            processed.shots = annotations.shotAnnotations.map(shot => ({
+                startTime: shot.startTimeOffset,
+                endTime: shot.endTimeOffset
+            }));
+        }
+
+        // Process explicit content detection
+        if (annotations.explicitAnnotation) {
+            processed.explicitContent = {
+                frames: annotations.explicitAnnotation.frames || []
+            };
+        }
+
+        // Process text detection - store full annotation data
+        if (annotations.textAnnotations) {
+            processed.textAnnotations = annotations.textAnnotations.map(text => ({
+                text: text.text || '',
+                confidence: text.confidence || 0,
+                frames: text.frames || [],
+                segments: text.segments || []
+            }));
+        }
+
+        // Process object tracking - store full annotation data
+        if (annotations.objectAnnotations) {
+            processed.objectAnnotations = annotations.objectAnnotations.map(obj => ({
+                entity: obj.entity ? {
+                    entityId: obj.entity.entityId,
+                    description: obj.entity.description || '',
+                    languageCode: obj.entity.languageCode
+                } : null,
+                confidence: obj.confidence || 0,
+                frames: obj.frames || [],
+                tracks: obj.tracks || []
+            }));
+        }
+
+        // Process person detection - store full annotation data
+        if (annotations.personDetectionAnnotations) {
+            processed.personAnnotations = annotations.personDetectionAnnotations.map(person => ({
+                tracks: person.tracks || [],
+                version: person.version || null
+            }));
+        }
+
+        // Process speech transcription - store full annotation data
+        if (annotations.speechTranscriptions) {
+            processed.speechTranscriptions = annotations.speechTranscriptions.map(transcription => ({
+                alternatives: transcription.alternatives || [],
+                languageCode: transcription.languageCode || 'en-US'
+            }));
+            
+            // Also create a simple transcript string for backward compatibility
+            processed.transcript = annotations.speechTranscriptions
+                .map(transcription => transcription.alternatives && transcription.alternatives[0] ? 
+                     transcription.alternatives[0].transcript : '')
                 .join(' ');
-            processed.transcript = transcripts;
-            processed.wordCount = transcripts.split(' ').length;
+            processed.wordCount = processed.transcript.split(' ').filter(word => word.length > 0).length;
         }
 
-        // Process text detection
-        if (result.annotationResults[0].textAnnotations) {
-            processed.textDetections = result.annotationResults[0].textAnnotations.map(text => ({
-                text: text.text,
-                confidence: text.confidence
-            }));
-        }
-
-        // Extract hook timing (first 3 seconds)
+        // Extract hook timing (first 3 seconds) for analysis
         processed.hooks = this.extractHookElements(result);
 
         return processed;
@@ -891,6 +965,38 @@ Analysis Period: Mix of recent (0-30 days) and historical (30-60 days) content`;
             } catch (error) {
                 console.error(`❌ Failed to delete GCS file:`, error);
             }
+        }
+    }
+
+    /**
+     * Save video analysis results to JSON files
+     */
+    async saveVideoAnalysisResults(videoId, rawResult, processedResult) {
+        try {
+            const outputDir = path.join(__dirname, '../../outputs/video-analysis');
+            
+            // Ensure output directory exists
+            await fs.mkdir(outputDir, { recursive: true });
+            
+            // Create filename based on video ID
+            const filename = `${videoId}.json`;
+            const filepath = path.join(outputDir, filename);
+            
+            // Combine raw and processed results
+            const fullResult = {
+                videoId: videoId,
+                timestamp: new Date().toISOString(),
+                processed: processedResult,
+                raw: rawResult
+            };
+            
+            // Write JSON file
+            await fs.writeFile(filepath, JSON.stringify(fullResult, null, 2), 'utf8');
+            console.log(`💾 Saved video analysis results to: ${filepath}`);
+            
+        } catch (error) {
+            console.error(`❌ Failed to save video analysis results for ${videoId}:`, error);
+            // Don't throw - we don't want to fail the entire analysis if save fails
         }
     }
 
