@@ -1,71 +1,84 @@
-# Dependencies
+# Environment
+.env
+venv/
+env/
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Node
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Logs
-logs
-*.log
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage directory used by tools like istanbul
-coverage/
-
-# Temporary folders
-temp/
-tmp/
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# OS generated files
+# OS
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
 
-# Analysis results (temporary files)
-cristiano_analysis_*.json
-analysis_results_final.json
-manual_analysis_result.json
+# Credentials
+credentials.json
+*-key.json
+wif-credential.json
 
-# Credential files (security)
-wif-credential*.json
-service-account*.json
-gcs-key.json
-*.backup.*
+# Video and Data Files (OUTPUTS ONLY)
+inputs/
+downloads/
+frame_outputs/
+unified_analysis/
+comprehensive_analysis_outputs/
+creative_analysis_outputs/
+human_analysis_outputs/
+object_detection_outputs/
+audio_analysis_outputs/
+insights/
+validation_reports/
+test_output/
 
-# Migration scripts and debug files (temporary)
-fix-wif-credentials.js
-migrate-to-service-account.sh
-validate-setup.js
-debug-*.js
-debug-*.html
+# Temporary files
+temp/
+tmp/
+*.tmp
+*.log
 
-# Compressed files
-*.zip
-*.tar.gz
-*.rar
+# Large data files
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.jpg
+*.jpeg
+*.png
+*.gif
 
-# Token files
-*.txt.backup.*
-gcloud-token.txt*
+# Analysis outputs
+*_analysis.json
+*_timeline.json
+*_detections.json
+*_prompt.json
+pipeline_state.json
+integrated_processed_videos.json
+pipeline_summary.json
+
+# Generated reports
+*.html
+all_prompts_summary.txt
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Git
+.git/gc.log
