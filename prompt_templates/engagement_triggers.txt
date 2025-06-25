@@ -1,0 +1,21 @@
+Input File: unified_analysis/[video_id].json
+
+Task:
+- Identify all engagement triggers:
+  - Finger pointing
+  - On-screen text like "Follow"
+  - Meme stickers
+  - Dramatic expressions
+- Classify them by type and timing.
+
+Constraints:
+- Use gestureTimeline, stickerTimeline, textOverlayTimeline, and expressionTimeline.
+
+Response Format:
+{
+  "engagementTriggers": [
+    { "type": "...", "timestamp": ... },
+    ...
+  ],
+  "notes": "..."
+}

@@ -1,0 +1,19 @@
+Input File: unified_analysis/[video_id].json
+
+Task:
+- Evaluate how people are framed in the video.
+- Report:
+  - Average distance (close-up, mid, far)
+  - Dominant framing style (talking head, over-the-shoulder, full body)
+- Check whether framing shifts (e.g., zoom in/out).
+
+Constraints:
+- Use personTimeline and cameraDistanceTimeline.
+
+Response Format:
+{
+  "dominantFraming": "...",
+  "averageDistance": "...",
+  "framingShifts": true/false,
+  "notes": "..."
+}

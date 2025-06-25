@@ -1,0 +1,21 @@
+Input File: unified_analysis/[video_id].json
+
+Task:
+- Parse speech to detect:
+  - Hooks ("Wait for it", "Look at this")
+  - CTA phrases ("Follow", "Link in bio")
+- Report:
+  - Timestamps for each.
+  - Frequency and type.
+
+Constraints:
+- Use speechTimeline from the JSON.
+
+Response Format:
+{
+  "hooksDetected": [...],
+  "ctaPhrasesDetected": [...],
+  "hookTimestamps": [...],
+  "ctaTimestamps": [...],
+  "notes": "..."
+}

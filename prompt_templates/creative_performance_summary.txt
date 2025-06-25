@@ -1,0 +1,77 @@
+Input: Analysis outputs from 14 prior Claude prompts for this video
+
+Task:
+Generate a comprehensive Creative Performance Summary that synthesizes all insights. Include:
+
+1. Overall Performance Score (0-100):
+   - Weight hook strength (20%)
+   - CTA effectiveness (15%)
+   - Creative density appropriateness (15%)
+   - Pacing quality (10%)
+   - Engagement triggers (15%)
+   - Content balance (10%)
+   - Weakness severity (15%)
+
+2. Key Strengths (Top 3):
+   - What this video does exceptionally well
+   - Which elements drive engagement
+
+3. Critical Weaknesses (Top 3):
+   - Major issues impacting performance
+   - Missed opportunities
+
+4. Formula Analysis:
+   - Define the content formula used
+   - Replicability assessment
+   - Scalability potential
+
+5. Optimization Roadmap:
+   - 3 immediate fixes (quick wins)
+   - 2 strategic improvements (longer term)
+
+6. Competitive Position:
+   - How this video ranks vs. category norms
+   - Viral potential assessment
+
+Constraints:
+- Base all insights on the 14 analysis outputs provided
+- Be specific with timestamps and examples
+- Prioritize actionable recommendations
+
+Response Format:
+{
+  "overallScore": ...,
+  "scoreBreakdown": {
+    "hookStrength": ...,
+    "ctaEffectiveness": ...,
+    "creativeDensity": ...,
+    "pacing": ...,
+    "engagementTriggers": ...,
+    "contentBalance": ...,
+    "weaknessPenalty": ...
+  },
+  "keyStrengths": [
+    { "strength": "...", "impact": "High/Medium", "evidence": "..." },
+    ...
+  ],
+  "criticalWeaknesses": [
+    { "weakness": "...", "severity": "High/Medium", "timestamp": "..." },
+    ...
+  ],
+  "formulaAnalysis": {
+    "contentType": "...",
+    "formula": "...",
+    "replicability": "High/Medium/Low",
+    "scalability": "High/Medium/Low"
+  },
+  "optimizationRoadmap": {
+    "quickWins": [...],
+    "strategicImprovements": [...]
+  },
+  "competitivePosition": {
+    "categoryRank": "Top 10%/25%/50%/Bottom 50%",
+    "viralPotential": "High/Medium/Low",
+    "reasoning": "..."
+  },
+  "executiveSummary": "..."
+}

@@ -1,0 +1,20 @@
+Input File: unified_analysis/[video_id].json
+
+Task:
+- Detect creative weaknesses such as:
+  - Delayed hook
+  - No CTA
+  - Poor pacing (too slow/too fast)
+  - No clear framing (messy camera work)
+  - Audio imbalance (speech too quiet, music too loud)
+- Suggest improvements.
+
+Constraints:
+- Pull data from all timelines (gesture, expression, sceneChange, textOverlay, sticker, audio, etc.).
+
+Response Format:
+{
+  "weaknesses": [...],
+  "suggestedImprovements": [...],
+  "notes": "..."
+}

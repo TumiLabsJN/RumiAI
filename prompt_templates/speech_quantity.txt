@@ -1,0 +1,18 @@
+Input File: unified_analysis/[video_id].json
+
+Task:
+- Calculate:
+  - Total word count spoken
+  - Speech density (words per second)
+  - % of video that has speech
+
+Constraints:
+- Use speechTimeline and metadata.
+
+Response Format:
+{
+  "totalWords": ...,
+  "speechDensity": "... words per second",
+  "speechCoverage": "...%",
+  "notes": "..."
+}

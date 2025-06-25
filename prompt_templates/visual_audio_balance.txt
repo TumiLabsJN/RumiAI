@@ -1,0 +1,23 @@
+Input File: unified_analysis/[video_id].json
+
+Task:
+- Classify whether the video is:
+  - Speech-driven (voice carries the content)
+  - Visual-driven (gestures, overlays, objects dominate)
+  - Music-driven (audio ratio >70% music)
+  - Mixed
+- Report supporting evidence:
+  - Music vs speech audio ratio
+  - Presence of heavy gestures, text, objects
+
+Constraints:
+- Use audioRatioTimeline, speechTimeline, gestureTimeline, textOverlayTimeline, objectTimeline.
+
+Response Format:
+{
+  "contentDriver": "...",
+  "musicPercentage": "...%",
+  "speechPercentage": "...%",
+  "visualActivityLevel": "Low/Medium/High",
+  "notes": "..."
+}

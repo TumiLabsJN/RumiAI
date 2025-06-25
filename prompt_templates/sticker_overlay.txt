@@ -1,0 +1,21 @@
+Input File: unified_analysis/[video_id].json
+
+Task:
+- Detect presence of stickers, meme overlays, TikTok UI elements.
+- Report:
+  - Timestamps when they appear.
+  - Sticker density (Minimal / Moderate / Heavy).
+- Determine whether sticker usage contributes to the hook or CTA.
+
+Constraints:
+- Use stickerTimeline and textOverlayTimeline.
+
+Response Format:
+{
+  "stickerPresence": true/false,
+  "stickerDensity": "...",
+  "stickerTimestamps": [...],
+  "usedForHook": true/false,
+  "usedForCTA": true/false,
+  "notes": "..."
+}
