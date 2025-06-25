@@ -1,0 +1,36 @@
+Input File: unified_analysis/[video_id].json
+
+Task:
+Classify each OCR-detected text string as either an intentional overlay or printed product label.
+
+Requirements:
+- For each text item (from OCR), inspect its:
+  - Text content
+  - Frame number
+  - Bounding box coordinates
+  - Confidence score
+- Track repeated text across frames to identify static placement.
+
+Rules:
+1. If the same text appears in ≥3 consecutive frames with minimal bounding box movement (less than 10% change in x/y), classify as "product_label".
+2. If a text element appears only once or moves across the screen over time, classify as "overlay_text".
+3. If the bounding box stays in the bottom-right of the screen across frames AND the box is small (≤25% of frame area), classify as "product_label".
+4. If confidence is < 0.6 and the text has distorted or clipped characters, classify as "product_label".
+5. Otherwise, classify as "overlay_text".
+
+Constraints:
+- Use only the data provided in `textOverlayTimeline`
+- Return classification with 1–2 sentence reasoning per item
+- Frame dimensions are typically 576x1024 (width x height)
+
+Response Format (JSON):
+[
+  {
+    "text": "protein goals",
+    "category": "product_label",
+    "frame": 3,
+    "bbox": { "x1": ..., "y1": ..., "x2": ..., "y2": ... },
+    "reasoning": "Appears in 4 frames with nearly identical position; likely printed on a jar label."
+  },
+  ...
+]

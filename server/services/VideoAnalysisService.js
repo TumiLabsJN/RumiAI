@@ -7,6 +7,7 @@ const { spawn } = require('child_process');
 const crypto = require('crypto');
 const CredentialValidator = require('../utils/credentialValidator');
 const MetadataIntelligenceLayer = require('./MetadataIntelligenceLayer');
+const UnifiedTimelineAssembler = require('./UnifiedTimelineAssembler');
 
 class VideoAnalysisService {
     constructor() {
@@ -165,6 +166,33 @@ class VideoAnalysisService {
                 completedAt: new Date().toISOString()
             };
 
+            // Phase 6: Assemble unified timeline (95-100%)
+            this.updateJobStatus(jobId, {
+                progress: 95,
+                phase: 'assembling_timeline',
+                message: 'Creating unified timeline...'
+            });
+
+            // Assemble unified timeline for each video
+            for (const video of finalResults.videos) {
+                try {
+                    // Get the intelligence result for this video
+                    const intelligenceResult = finalResults.intelligence?.find(v => v.id === video.id);
+                    // The analysis data is directly in the intelligence result, not under an 'analysis' key
+                    const metadataSummary = intelligenceResult || {};
+                    await UnifiedTimelineAssembler.assembleUnifiedTimeline(
+                        video.id,
+                        metadataSummary,
+                        video,
+                        username  // Pass username for local file paths
+                    );
+                    console.log(`✅ Unified timeline created for video ${video.id}`);
+                } catch (err) {
+                    console.error(`⚠️ Failed to create unified timeline for ${video.id}:`, err.message);
+                    // Continue with other videos even if one fails
+                }
+            }
+
             this.updateJobStatus(jobId, {
                 status: 'completed',
                 progress: 100,
@@ -190,6 +218,29 @@ class VideoAnalysisService {
      * Select 6 videos for analysis (3 from last 30 days, 3 from 30-60 days)
      */
     selectVideosForAnalysis(allVideos) {
+        // Check for test mode flag
+        if (process.env.RUMIAI_TEST_MODE === 'true') {
+            console.log('🧪 Test mode: Bypassing date filters');
+            console.log(`📊 Received ${allVideos.length} videos for analysis`);
+            
+            // Debug: Show what we received
+            if (allVideos.length > 0) {
+                console.log('🔍 First video properties:', Object.keys(allVideos[0]).join(', '));
+                console.log('🔍 First video downloadUrl:', allVideos[0].downloadUrl);
+            }
+            
+            // In test mode, return all videos with download URLs
+            const selected = allVideos.filter(video => video.downloadUrl);
+            console.log(`📊 Test mode - Selected ${selected.length} video(s) for analysis`);
+            
+            if (selected.length === 0 && allVideos.length > 0) {
+                console.log('⚠️ No videos have downloadUrl property');
+            }
+            
+            return selected;
+        }
+
+        // Normal production logic
         const now = new Date();
         const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
         const sixtyDaysAgo = new Date(now.getTime() - (60 * 24 * 60 * 60 * 1000));
@@ -509,7 +560,14 @@ class VideoAnalysisService {
                 speechTranscriptionConfig: {
                     languageCode: 'en-US',
                     enableAutomaticPunctuation: true,
-                    enableWordTimeOffsets: true
+                    enableWordTimeOffsets: true,
+                    enableSpeakerDiarization: false,
+                    maxAlternatives: 1,
+                    filterProfanity: false,
+                    speechContexts: [{
+                        phrases: ['TikTok', 'protein', 'recipe', 'workout', 'tutorial']
+                    }],
+                    audioTracks: [0]  // Analyze first audio track
                 }
             }
         };
@@ -600,7 +658,8 @@ class VideoAnalysisService {
         }
 
         // Process speech transcription - store full annotation data
-        if (annotations.speechTranscriptions) {
+        if (annotations.speechTranscriptions && annotations.speechTranscriptions.length > 0) {
+            console.log(`🎤 Processing ${annotations.speechTranscriptions.length} speech transcriptions`);
             processed.speechTranscriptions = annotations.speechTranscriptions.map(transcription => ({
                 alternatives: transcription.alternatives || [],
                 languageCode: transcription.languageCode || 'en-US'
@@ -612,6 +671,13 @@ class VideoAnalysisService {
                      transcription.alternatives[0].transcript : '')
                 .join(' ');
             processed.wordCount = processed.transcript.split(' ').filter(word => word.length > 0).length;
+            console.log(`📝 Transcript: ${processed.transcript.substring(0, 100)}...`);
+        } else {
+            console.log('🔇 No speech transcriptions found in video');
+            // Check if audio analysis was attempted
+            if (result.annotationResults && result.annotationResults[0]) {
+                console.log('📊 Available annotations:', Object.keys(result.annotationResults[0]));
+            }
         }
 
         // Extract hook timing (first 3 seconds) for analysis
@@ -652,11 +718,18 @@ class VideoAnalysisService {
      * Generate insights using Claude API
      */
     async generateClaudeInsights(intelligenceResults, originalVideos) {
+        // Check if API key is configured
+        if (!process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY === 'your-anthropic-api-key-here') {
+            console.log('⚠️ ANTHROPIC_API_KEY not configured - using fallback insights');
+            console.log('💡 To enable Claude AI insights, add your API key to .env file');
+            return this.generateFallbackInsights(intelligenceResults);
+        }
+
         const prompt = this.buildClaudePrompt(intelligenceResults, originalVideos);
         
         try {
             const response = await axios.post(process.env.CLAUDE_API_URL || 'https://api.anthropic.com/v1/messages', {
-                model: 'claude-3-sonnet-20240229',
+                model: 'claude-3-5-sonnet-20241022',
                 max_tokens: 4000,
                 messages: [{
                     role: 'user',
@@ -672,7 +745,10 @@ class VideoAnalysisService {
 
             return this.parseClaudeResponse(response.data.content[0].text);
         } catch (error) {
-            console.error('❌ Claude API error:', error);
+            console.error('❌ Claude API error:', error.response?.data || error.message);
+            if (error.response?.status === 401) {
+                console.log('💡 Invalid API key. Please check your ANTHROPIC_API_KEY in .env file');
+            }
             return this.generateFallbackInsights(intelligenceResults);
         }
     }
@@ -1014,10 +1090,19 @@ Analysis Period: Mix of recent (0-30 days) and historical (30-60 days) content`;
      */
     async saveVideoAnalysisResults(videoId, rawResult, processedResult) {
         try {
-            const outputDir = path.join(__dirname, '../../outputs/video-analysis');
-            
-            // Ensure output directory exists
-            await fs.mkdir(outputDir, { recursive: true });
+            // Use temp directory if outputs is not writable
+            let outputDir = path.join(__dirname, '../../outputs/video-analysis');
+            try {
+                await fs.mkdir(outputDir, { recursive: true });
+            } catch (err) {
+                if (err.code === 'EACCES') {
+                    console.log('⚠️ Using temp directory for analysis results due to permissions');
+                    outputDir = path.join(this.tempDir, 'video-analysis');
+                    await fs.mkdir(outputDir, { recursive: true });
+                } else {
+                    throw err;
+                }
+            }
             
             // Create filename based on video ID
             const filename = `${videoId}.json`;
