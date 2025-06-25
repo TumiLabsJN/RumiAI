@@ -1,0 +1,20 @@
+Input File: unified_analysis/[video_id].json
+
+Task:
+- Evaluate the pacing of the video based on scene changes and movement patterns.
+- Classify as:
+  - Fast-cut / Moderate / Slow-paced
+- Count number of shots and average duration.
+- Report whether pacing accelerates or slows down toward the end.
+
+Constraints:
+- Use sceneChangeTimeline and objectTimeline for pacing cues.
+
+Response Format:
+{
+  "pacing": "...",
+  "totalShots": ...,
+  "avgShotDuration": "... seconds",
+  "pacingTrend": "...",
+  "notes": "..."
+}

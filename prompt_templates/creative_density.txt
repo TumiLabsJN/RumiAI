@@ -1,0 +1,24 @@
+Input File: unified_analysis/[video_id].json
+
+Task:
+- Measure the creative density of this video.
+- Count how many unique creative signals appear over time:
+  - Gestures
+  - Stickers
+  - Text overlays
+  - Scene changes
+  - Facial expressions
+- Classify creative density as:
+  - Minimal / Medium / Heavy
+- Report whether the creative signals are clustered (front-loaded, back-loaded) or spread evenly.
+
+Constraints:
+- Use gestureTimeline, stickerTimeline, sceneChangeTimeline, expressionTimeline, and textOverlayTimeline.
+
+Response Format:
+{
+  "creativeDensityLevel": "...",
+  "signalCount": ...,
+  "distributionPattern": "...",
+  "notes": "..."
+}

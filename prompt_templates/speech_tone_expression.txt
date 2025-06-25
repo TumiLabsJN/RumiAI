@@ -1,0 +1,25 @@
+Input File: unified_analysis/[video_id].json
+
+Task:
+- Evaluate the tone of the speech content (spoken words).
+- Classify the tone as:
+  - Educational/Scientific
+  - Humorous/Playful
+  - Promotional/CTA-heavy
+  - Personal/Storytelling
+  - Serious/Informative
+- Link tone shifts to facial expressions over time.
+- Report whether tone and expressions align (e.g., smiling during jokes).
+
+Constraints:
+- Use speechTimeline and expressionTimeline.
+- If speech is absent, report 'Tone not present.'
+
+Response Format:
+{
+  "primaryTone": "...",
+  "secondaryTone": "...",
+  "toneConfidence": "High/Medium/Low",
+  "toneLinkedToExpressions": true/false,
+  "notes": "..."
+}

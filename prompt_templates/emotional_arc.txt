@@ -1,0 +1,20 @@
+Input File: unified_analysis/[video_id].json
+
+Task:
+- Track the emotional arc of the video based on facial expressions and tone of speech.
+- Detect if the emotional tone changes over time:
+  - E.g., starts serious, ends playful.
+- Summarize in 2-3 sentences.
+
+Constraints:
+- Use expressionTimeline and speechTimeline to infer.
+- If no clear emotional arc, report as "Flat".
+
+Response Format:
+{
+  "emotionalArcDescription": "...",
+  "dominantEmotionStart": "...",
+  "dominantEmotionMid": "...",
+  "dominantEmotionEnd": "...",
+  "notes": "..."
+}
