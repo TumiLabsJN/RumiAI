@@ -1,19 +1,163 @@
+Goal: Extract person framing features as structured data for ML analysis
+
 Input File: unified_analysis/[video_id].json
 
-Task:
-- Evaluate how people are framed in the video.
-- Report:
-  - Average distance (close-up, mid, far)
-  - Dominant framing style (talking head, over-the-shoulder, full body)
-- Check whether framing shifts (e.g., zoom in/out).
+You will receive precomputed person framing metrics:
+- face_screen_time_ratio
+- person_screen_time_ratio
+- avg_camera_distance
+- dominant_shot_type
+- intro_shot_type
+- shot_type_distribution
+- framing_volatility
+- subject_absence_count
+- longest_absence_duration
+- person_framing_pattern_tags
+- gaze_analysis
+- action_recognition
+- background_analysis
+- temporal_evolution
+- video_intent
+- intent_alignment_risk
+- gaze_steadiness
+
+Raw Timeline Data (for validation):
+- camera_distance_timeline
+- object_timeline
+- expression_timeline
+- person_timeline
+
+Output the following 6 modular blocks:
+
+1. framingCoreMetrics
+{
+  "faceScreenTimeRatio": float,
+  "personScreenTimeRatio": float,
+  "avgCameraDistance": "close" | "medium" | "far" | "unknown",
+  "dominantShotType": "close" | "medium" | "far" | "unknown",
+  "introShotType": "close" | "medium" | "far" | "unknown",
+  "framingVolatility": float,
+  "subjectAbsenceCount": int,
+  "longestAbsenceDuration": int,
+  "eyeContactRatio": float | null,
+  "actionDiversity": int | null,
+  "confidence": float
+}
+
+2. framingDynamics
+{
+  "shotTypeDistribution": {
+    "close": float,
+    "medium": float,
+    "far": float
+  },
+  "temporalEvolution": "increasing_intimacy" | "decreasing_intimacy" | "product_to_person" | "person_to_product" | "bookend_pattern" | "consistent_approach" | "unknown",
+  "shotTransitions": [
+    {
+      "timestamp": string,
+      "fromShot": "close" | "medium" | "far",
+      "toShot": "close" | "medium" | "far"
+    }
+  ],
+  "absenceSegments": [
+    {"start": int, "end": int, "duration": int}
+  ],
+  "confidence": float
+}
+
+3. framingInteractions
+{
+  "gazeAnalysis": {
+    "eyeContactRatio": float | null,
+    "primaryGazeDirection": "camera" | "left" | "right" | "down" | "unknown"
+  },
+  "actionRecognition": {
+    "primaryActions": [string],
+    "actionDiversity": int
+  },
+  "backgroundAnalysis": {
+    "backgroundStability": "static" | "mostly_static" | "dynamic" | "highly_dynamic" | "unknown",
+    "changeFrequency": int,
+    "avgChangeMagnitude": float
+  },
+  "gazeSteadiness": "low" | "medium" | "high" | "unknown",
+  "confidence": float
+}
+
+4. framingKeyEvents
+{
+  "introMoment": {
+    "shotType": "close" | "medium" | "far" | "unknown",
+    "personPresent": boolean,
+    "timestamp": "0-3s"
+  },
+  "keyTransitions": [
+    {
+      "timestamp": string,
+      "transitionType": "zoom_in" | "zoom_out" | "cutaway" | "return",
+      "fromShot": string,
+      "toShot": string
+    }
+  ],
+  "prolongedAbsences": [
+    {"start": int, "end": int, "duration": int}
+  ],
+  "confidence": float
+}
+
+5. framingPatterns
+{
+  "framingArchetype": "talking_head" | "dynamic_demo" | "product_focused" | "balanced_presence" | "unknown",
+  "patternTags": [
+    "strong_creator_presence",
+    "minimal_creator_presence",
+    "cutaway_heavy",
+    "continuous_presence",
+    "stable_framing",
+    "dynamic_framing",
+    "talking_head_style",
+    "full_body_content"
+  ],
+  "mlTags": ["high_face_time", "low_volatility", "close_shot_intro"],
+  "confidence": float
+}
+
+6. framingQuality
+{
+  "dataCompleteness": float,
+  "detectionCoverage": {
+    "faceDetectionRate": float,
+    "personDetectionRate": float,
+    "gazeDataAvailable": boolean,
+    "actionDataAvailable": boolean,
+    "backgroundDataAvailable": boolean
+  },
+  "videoIntent": {
+    "primaryIntent": "creator_connection" | "product_demo" | "entertainment" | "education" | "unknown",
+    "introStrategy": "creator_first" | "content_first" | "balanced" | "unknown",
+    "presenceSignal": string | null,
+    "actionSignal": string | null
+  },
+  "intentAlignmentRisk": "low" | "medium" | "high",
+  "overallConfidence": float
+}
 
 Constraints:
-- Use personTimeline and cameraDistanceTimeline.
-
-Response Format:
-{
-  "dominantFraming": "...",
-  "averageDistance": "...",
-  "framingShifts": true/false,
-  "notes": "..."
-}
+- Output ONLY the 6 JSON blocks, no additional text
+- All timestamps must align with input data
+- Include confidence scores based on data quality (0.0-1.0)
+- Report absences explicitly using empty arrays, null values, or "unknown"
+- Use descriptive values, not prescriptive judgments
+- Classification thresholds:
+  - framingArchetype = "talking_head" if face_screen_time_ratio > 0.7 AND framing_volatility < 0.3
+  - framingArchetype = "dynamic_demo" if action_diversity > 5 AND framing_volatility > 0.5
+  - framingArchetype = "product_focused" if person_screen_time_ratio < 0.3
+  - framingArchetype = "balanced_presence" if person_screen_time_ratio between 0.3-0.7
+  - Add "strong_creator_presence" if face_screen_time_ratio > 0.7
+  - Add "minimal_creator_presence" if face_screen_time_ratio < 0.3
+  - Add "cutaway_heavy" if subject_absence_count > 5
+  - Add "continuous_presence" if subject_absence_count = 0
+  - Add "stable_framing" if framing_volatility < 0.2
+  - Add "dynamic_framing" if framing_volatility > 0.6
+  - Add "talking_head_style" if face_screen_time_ratio > 0.6 AND shot_type_distribution["close"] > 0.5
+  - Add "full_body_content" if person_screen_time_ratio > 0.6 AND shot_type_distribution["far"] > 0.4

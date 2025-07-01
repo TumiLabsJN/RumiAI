@@ -99,28 +99,65 @@ def compute_visual_overlay_metrics(text_overlay_timeline, sticker_timeline, gest
         interval = sorted_appearances[i][0] - sorted_appearances[i-1][0]
         appearance_intervals.append(interval)
     
-    # Burst windows and clutter timeline (1-second granularity for better accuracy)
+    # Burst windows detection with sliding 3-second window
     burst_windows = []
-    clutter_timeline = {}
-    burst_threshold = 2  # Lowered from 3 since we're using 1s windows instead of 5s
+    burst_threshold = 3  # 3+ overlays in 3 seconds
+    window_size = 3
     
-    for start in range(0, seconds):
-        end = start + 1
-        window_key = f"{start}-{end}s"
+    for start in range(0, seconds - window_size + 1):
+        end = start + window_size
         
+        # Count overlays in this window
         text_count = sum(1 for t in text_appearances if start <= t[0] < end)
-        sticker_count = sum(1 for ts, _ in sticker_timeline.items() 
+        sticker_count = sum(1 for ts in sticker_timeline 
                            if start <= parse_timestamp_to_seconds(ts) < end)
         total_count = text_count + sticker_count
         
-        clutter_timeline[window_key] = {
-            'text': text_count,
-            'sticker': sticker_count,
-            'total': total_count
-        }
-        
         if total_count >= burst_threshold:
-            burst_windows.append(window_key)
+            window_key = f"{start}-{end}s"
+            if window_key not in burst_windows:
+                burst_windows.append(window_key)
+    
+    # Clutter timeline with proper structure
+    clutter_timeline = []
+    # Group consecutive seconds with similar overlay counts
+    current_group = None
+    
+    for sec in range(0, seconds):
+        text_count = sum(1 for t in text_appearances if sec <= t[0] < sec + 1)
+        sticker_count = sum(1 for ts in sticker_timeline 
+                           if sec <= parse_timestamp_to_seconds(ts) < sec + 1)
+        total_count = text_count + sticker_count
+        
+        if current_group is None:
+            current_group = {
+                'start': sec,
+                'end': sec + 1,
+                'text': text_count,
+                'sticker': sticker_count,
+                'total': total_count
+            }
+        elif abs(current_group['total'] - total_count) <= 1:
+            # Extend current group
+            current_group['end'] = sec + 1
+            current_group['text'] = max(current_group['text'], text_count)
+            current_group['sticker'] = max(current_group['sticker'], sticker_count)
+            current_group['total'] = max(current_group['total'], total_count)
+        else:
+            # Start new group
+            if current_group['total'] > 0:  # Only add non-empty groups
+                clutter_timeline.append(current_group)
+            current_group = {
+                'start': sec,
+                'end': sec + 1,
+                'text': text_count,
+                'sticker': sticker_count,
+                'total': total_count
+            }
+    
+    # Add last group
+    if current_group and current_group['total'] > 0:
+        clutter_timeline.append(current_group)
     
     # Calculate breathing room ratio
     seconds_with_overlays = set()
@@ -203,7 +240,7 @@ def compute_visual_overlay_metrics(text_overlay_timeline, sticker_timeline, gest
             else:
                 cta_reinforcement_matrix['text_only'] += 1
     
-    # 7. Semantic Clustering
+    # 7. Semantic Clustering with better pattern matching
     text_semantic_groups = {
         'product_mentions': 0,
         'urgency_phrases': 0,
@@ -212,14 +249,29 @@ def compute_visual_overlay_metrics(text_overlay_timeline, sticker_timeline, gest
         'other_text': 0
     }
     
-    product_patterns = ['product', 'item', 'brand', 'quality', 'feature', 'benefit']
-    urgency_patterns = ['now', 'today', 'limited', 'last', 'hurry', 'quick', 'fast']
-    social_patterns = ['everyone', 'viral', 'trending', 'popular', 'love', 'favorite']
+    # More comprehensive patterns
+    product_patterns = ['product', 'item', 'brand', 'quality', 'feature', 'benefit', 'new', 'best', 
+                       'premium', 'exclusive', 'collection', 'design', 'material', 'ingredients']
+    urgency_patterns = ['now', 'today', 'limited', 'last', 'hurry', 'quick', 'fast', 'only', 
+                       'left', 'sale', 'offer', 'deal', 'discount', 'save', 'ends']
+    social_patterns = ['everyone', 'viral', 'trending', 'popular', 'love', 'favorite', 'million', 
+                      'people', 'customers', 'reviews', 'rated', 'recommend', 'trust']
     
-    for _, text in text_appearances:
+    # Also categorize by text type
+    text_categories = {
+        'headline': 0,
+        'subtitle': 0,
+        'cta': 0,
+        'caption': 0,
+        'numbers': 0,
+        'hashtag': 0
+    }
+    
+    for time_pos, text in text_appearances:
         text_lower = text.lower()
         classified = False
         
+        # Semantic categorization
         if any(pattern in text_lower for pattern in product_patterns):
             text_semantic_groups['product_mentions'] += 1
             classified = True
@@ -235,8 +287,22 @@ def compute_visual_overlay_metrics(text_overlay_timeline, sticker_timeline, gest
         
         if not classified:
             text_semantic_groups['other_text'] += 1
+        
+        # Type categorization
+        if text.startswith('#'):
+            text_categories['hashtag'] += 1
+        elif any(cta in text_lower for cta in cta_keywords):
+            text_categories['cta'] += 1
+        elif re.match(r'^\d+', text):  # Starts with number
+            text_categories['numbers'] += 1
+        elif len(text) > 50:  # Long text
+            text_categories['caption'] += 1
+        elif len(text) > 20 and time_pos < 3:  # Early prominent text
+            text_categories['headline'] += 1
+        else:
+            text_categories['subtitle'] += 1
     
-    # 8. Cross-Modal Alignment - Speech
+    # 8. Cross-Modal Alignment - Speech with key moments
     text_speech_alignment = {
         'text_matches_speech': 0,
         'text_precedes_speech': 0,
@@ -244,31 +310,75 @@ def compute_visual_overlay_metrics(text_overlay_timeline, sticker_timeline, gest
         'text_contradicts_speech': 0
     }
     
-    speech_texts = []
-    for timestamp, data in speech_timeline.items():
-        if 'text' in data:
-            speech_texts.append((parse_timestamp_to_seconds(timestamp), data['text'].lower()))
+    key_alignment_moments = []
     
+    # Get speech words with timing
+    speech_words = []
+    for timestamp, data in speech_timeline.items():
+        time = parse_timestamp_to_seconds(timestamp)
+        if time is not None and 'text' in data:
+            words = data['text'].lower().split()
+            for word in words:
+                if len(word) > 2:  # Skip very short words
+                    speech_words.append((time, word))
+    
+    # Match text overlays with speech
     for text_time, text in text_appearances:
         text_lower = text.lower()
+        text_words = [w for w in text_lower.split() if len(w) > 2]
         alignment_found = False
+        best_match = None
+        min_time_diff = float('inf')
         
-        for speech_time, speech_text in speech_texts:
-            time_diff = text_time - speech_time
+        for speech_time, speech_word in speech_words:
+            # Check for word matches
+            for text_word in text_words:
+                if text_word in speech_word or speech_word in text_word:
+                    time_diff = text_time - speech_time
+                    
+                    if abs(time_diff) < abs(min_time_diff):
+                        min_time_diff = time_diff
+                        best_match = (speech_time, speech_word, text_word)
+                    
+                    alignment_found = True
+        
+        if alignment_found and best_match:
+            speech_time, speech_word, text_word = best_match
             
-            if any(word in speech_text for word in text_lower.split()) or \
-               any(word in text_lower for word in speech_text.split()):
-                if abs(time_diff) < 1.0:
-                    text_speech_alignment['text_matches_speech'] += 1
-                elif time_diff < -1.0:
-                    text_speech_alignment['text_precedes_speech'] += 1
-                elif time_diff > 1.0:
-                    text_speech_alignment['text_follows_speech'] += 1
-                alignment_found = True
-                break
-        
-        if not alignment_found and speech_texts:
-            text_speech_alignment['text_contradicts_speech'] += 1
+            if abs(min_time_diff) < 0.5:
+                text_speech_alignment['text_matches_speech'] += 1
+                # Record key moment
+                key_alignment_moments.append({
+                    'timestamp': round(text_time, 2),
+                    'text': text,
+                    'speech_match': speech_word,
+                    'alignment': 'perfect',
+                    'time_diff': round(min_time_diff, 2)
+                })
+            elif min_time_diff < -0.5:
+                text_speech_alignment['text_precedes_speech'] += 1
+                if abs(min_time_diff) < 2.0:  # Still notable
+                    key_alignment_moments.append({
+                        'timestamp': round(text_time, 2),
+                        'text': text,
+                        'speech_match': speech_word,
+                        'alignment': 'anticipatory',
+                        'time_diff': round(min_time_diff, 2)
+                    })
+            elif min_time_diff > 0.5:
+                text_speech_alignment['text_follows_speech'] += 1
+                if min_time_diff < 2.0:  # Still notable
+                    key_alignment_moments.append({
+                        'timestamp': round(text_time, 2),
+                        'text': text,
+                        'speech_match': speech_word,
+                        'alignment': 'reinforcing',
+                        'time_diff': round(min_time_diff, 2)
+                    })
+        else:
+            # No matching words found
+            if speech_words:
+                text_speech_alignment['text_contradicts_speech'] += 1
     
     # 9. Cross-Modal Alignment - Gesture
     text_gesture_coordination = {
@@ -295,6 +405,40 @@ def compute_visual_overlay_metrics(text_overlay_timeline, sticker_timeline, gest
             if not gesture_found:
                 text_gesture_coordination['misaligned'] += 1
     
+    # Determine density pattern
+    if text_appearances:
+        first_third_texts = sum(1 for t, _ in text_appearances if t[0] < video_duration / 3)
+        last_third_texts = sum(1 for t, _ in text_appearances if t[0] > 2 * video_duration / 3)
+        
+        if first_third_texts > total_text_overlays * 0.5:
+            density_pattern = 'front_loaded'
+        elif last_third_texts > total_text_overlays * 0.5:
+            density_pattern = 'climax'
+        else:
+            density_pattern = 'even'
+    else:
+        density_pattern = 'minimal'
+    
+    # Find peak density window
+    peak_density_window = '0-0s'
+    max_density = 0
+    for window in burst_windows:
+        start = int(window.split('-')[0])
+        density = sum(1 for t, _ in text_appearances if start <= t[0] < start + 3)
+        if density > max_density:
+            max_density = density
+            peak_density_window = window
+    
+    # Overall sync score
+    total_alignments = sum(text_speech_alignment.values())
+    if total_alignments > 0:
+        sync_score = text_speech_alignment['text_matches_speech'] / total_alignments
+    else:
+        sync_score = 0
+    
+    # Sticker metrics
+    total_sticker_count = len(sticker_timeline)
+    
     return {
         'avg_texts_per_second': round(avg_texts_per_second, 3),
         'unique_text_count': unique_text_count,
@@ -306,6 +450,8 @@ def compute_visual_overlay_metrics(text_overlay_timeline, sticker_timeline, gest
             'breathing_room_ratio': round(breathing_room_ratio, 3)
         },
         'clutter_timeline': clutter_timeline,
+        'density_pattern': density_pattern,
+        'peak_density_window': peak_density_window,
         'avg_simultaneous_texts': round(avg_simultaneous_texts, 2),
         'readability_components': readability_components,
         'text_position_distribution': text_position_distribution,
@@ -313,8 +459,13 @@ def compute_visual_overlay_metrics(text_overlay_timeline, sticker_timeline, gest
         'dominant_text_changes': dominant_text_changes,
         'cta_reinforcement_matrix': cta_reinforcement_matrix,
         'text_semantic_groups': text_semantic_groups,
+        'text_categories': text_categories,
         'text_speech_alignment': text_speech_alignment,
-        'text_gesture_coordination': text_gesture_coordination
+        'key_alignment_moments': key_alignment_moments[:5],  # Top 5 moments
+        'text_gesture_coordination': text_gesture_coordination,
+        'overall_sync_score': round(sync_score, 2),
+        'total_sticker_count': total_sticker_count,
+        'total_text_elements': total_text_overlays
     }
 
 
@@ -1492,12 +1643,29 @@ def compute_scene_pacing_metrics(scene_timeline, video_duration, object_timeline
     
     # Visual load per scene
     visual_load_per_scene = 0
+    avg_objects_per_shot = 0
     if object_timeline and total_shots > 0:
         total_objects = 0
-        for timestamp, data in object_timeline.items():
-            objects = data.get('objects', {})
-            total_objects += sum(objects.values())
+        object_counts_per_shot = []
+        
+        # Calculate objects per shot
+        for i in range(len(timestamps)):
+            shot_objects = []
+            current_time = parse_timestamp_to_seconds(timestamps[i])
+            next_time = parse_timestamp_to_seconds(timestamps[i + 1]) if i < len(timestamps) - 1 else video_duration
+            
+            # Count objects in this shot
+            for obj_timestamp, obj_data in object_timeline.items():
+                obj_time = parse_timestamp_to_seconds(obj_timestamp)
+                if obj_time and current_time <= obj_time < next_time:
+                    shot_objects.append(sum(obj_data.get('objects', {}).values()))
+            
+            if shot_objects:
+                object_counts_per_shot.append(mean(shot_objects))
+                total_objects += sum(shot_objects)
+        
         visual_load_per_scene = round(total_objects / total_shots, 2)
+        avg_objects_per_shot = round(mean(object_counts_per_shot), 2) if object_counts_per_shot else 0
     
     # Pattern tags (pacing_tags)
     pattern_tags = []
@@ -1528,6 +1696,56 @@ def compute_scene_pacing_metrics(scene_timeline, video_duration, object_timeline
     if shot_duration_variance > avg_shot_duration:
         pattern_tags.append("experimental_pacing")
     
+    # Find longest and shortest shot moments with proper timestamps
+    longest_shot_index = shot_durations.index(max_shot_duration) if shot_durations else 0
+    shortest_shot_index = shot_durations.index(min_shot_duration) if shot_durations else 0
+    
+    # Calculate timestamps for these moments
+    longest_shot_time = sum(shot_durations[:longest_shot_index]) if longest_shot_index > 0 else 0
+    shortest_shot_time = sum(shot_durations[:shortest_shot_index]) if shortest_shot_index > 0 else 0
+    
+    # Determine position in video
+    def get_position(time, duration):
+        if time < duration * 0.2:
+            return "intro"
+        elif time > duration * 0.8:
+            return "outro"
+        else:
+            return "middle"
+    
+    # Format montage segments
+    montage_segments_formatted = []
+    for segment in montage_segments:
+        # Calculate timestamp for montage segment
+        start_time = sum(shot_durations[:segment['start']])
+        end_time = sum(shot_durations[:segment['end'] + 1])
+        avg_duration = mean(shot_durations[segment['start']:segment['end'] + 1])
+        montage_segments_formatted.append({
+            'start': f"{int(start_time)}s",
+            'end': f"{int(end_time)}s",
+            'avgShotDuration': round(avg_duration, 2)
+        })
+    
+    # Determine acceleration trend
+    if acceleration_score > 0.3:
+        acceleration_trend = "accelerating"
+    elif acceleration_score < -0.3:
+        acceleration_trend = "decelerating"
+    else:
+        acceleration_trend = "stable"
+    
+    # Camera changes per shot
+    camera_changes_per_shot = round(shot_type_changes / total_shots, 2) if total_shots > 0 else 0
+    alignment_score = round(camera_movement_cuts / len(scene_changes), 2) if scene_changes else 0
+    
+    # Complexity level based on visual load
+    if avg_objects_per_shot > 5.0:
+        complexity_level = "high"
+    elif avg_objects_per_shot > 2.0:
+        complexity_level = "moderate"
+    else:
+        complexity_level = "low"
+    
     return {
         # Required metrics with exact naming
         'total_shots': total_shots,
@@ -1547,6 +1765,30 @@ def compute_scene_pacing_metrics(scene_timeline, video_duration, object_timeline
         'shot_type_changes': shot_type_changes,
         'pacing_tags': pattern_tags,
         
+        # Additional metrics for Claude prompt
+        'tempo_balance': {
+            'early_cuts': early_cuts,
+            'late_cuts': late_cuts,
+            'balance_index': balance_index
+        },
+        'peak_cut_moments': peak_moments,
+        'longest_shot_moment': {
+            'timestamp': f"{int(longest_shot_time)}-{int(longest_shot_time + 1)}s",
+            'duration': max_shot_duration,
+            'position': get_position(longest_shot_time, video_duration)
+        },
+        'shortest_shot_moment': {
+            'timestamp': f"{int(shortest_shot_time)}-{int(shortest_shot_time + 1)}s",
+            'duration': min_shot_duration,
+            'position': get_position(shortest_shot_time, video_duration)
+        },
+        'montage_segments': montage_segments_formatted,
+        'avg_objects_per_shot': avg_objects_per_shot,
+        'complexity_level': complexity_level,
+        'camera_changes_per_shot': camera_changes_per_shot,
+        'alignment_score': alignment_score,
+        'acceleration_trend': acceleration_trend,
+        
         # Additional metrics for backward compatibility
         'cut_frequency': round(cut_frequency, 2),
         'min_shot_duration': round(min_shot_duration, 2),
@@ -1560,7 +1802,7 @@ def compute_scene_pacing_metrics(scene_timeline, video_duration, object_timeline
         'rhythm_variability': round(rhythm_variability, 2),
         'acceleration_phases': len(acceleration_phases),
         'complexity_changes': complexity_changes,
-        'montage_segments': len(montage_segments),
+        'montage_segments_count': len(montage_segments),
         'peak_pacing_moments': len(peak_moments),
         'energy_curve': energy_curve[:10],  # First 10 points for context
         'camera_movement_cuts': camera_movement_cuts,
@@ -1728,8 +1970,12 @@ def compute_speech_analysis_metrics(speech_timeline, transcript, speech_segments
             gap_end = sorted_segments[i].get('start', 0)
             gap_duration = gap_end - gap_start
             
-            if gap_duration > 1:  # Pauses > 1 second
-                gap_type = "dramatic" if gap_duration > 2 else "strategic"
+            if gap_duration > 0.5:  # Pauses > 0.5 seconds (lower threshold)
+                gap_type = "natural"
+                if gap_duration > 2:
+                    gap_type = "dramatic"
+                elif gap_duration > 1:
+                    gap_type = "strategic"
                 if gap_duration > 3:
                     gap_type = "awkward"
                 
@@ -1781,12 +2027,17 @@ def compute_speech_analysis_metrics(speech_timeline, transcript, speech_segments
                 'confidence': 0.8
             })
     
-    # Calculate hook density per 10s
-    hook_density_per_10s = defaultdict(int)
+    # Calculate hook density per 10s - ensure all windows are represented
+    hook_density_per_10s = {}
+    for i in range(0, int(video_duration), 10):
+        window_key = f"{i}-{i+10}s"
+        hook_density_per_10s[window_key] = 0
+    
     for hook in hook_phrases:
         window = int(hook['timestamp'] / 10) * 10
         window_key = f"{window}-{window+10}s"
-        hook_density_per_10s[window_key] += 1
+        if window_key in hook_density_per_10s:
+            hook_density_per_10s[window_key] += 1
     
     # Opening hook strength (based on first 3 seconds)
     opening_hooks = sum(1 for hook in hook_phrases if hook['timestamp'] < 3)
@@ -1826,12 +2077,17 @@ def compute_speech_analysis_metrics(speech_timeline, transcript, speech_segments
                 'category': cta_category
             })
     
-    # CTA density and clustering
-    cta_density_per_10s = defaultdict(int)
+    # CTA density and clustering - ensure all windows are represented
+    cta_density_per_10s = {}
+    for i in range(0, int(video_duration), 10):
+        window_key = f"{i}-{i+10}s"
+        cta_density_per_10s[window_key] = 0
+    
     for cta in cta_phrases:
         window = int(cta['timestamp'] / 10) * 10
         window_key = f"{window}-{window+10}s"
-        cta_density_per_10s[window_key] += 1
+        if window_key in cta_density_per_10s:
+            cta_density_per_10s[window_key] += 1
     
     # Find CTA clusters
     cta_clustering = []
@@ -1931,14 +2187,27 @@ def compute_speech_analysis_metrics(speech_timeline, transcript, speech_segments
         if not any(common in phrase_3 for common in ['the', 'and', 'for']):
             phrase_counter[phrase_3] += 1
     
-    # Find repeated phrases
+    # Find repeated phrases with timestamps
     repetition_phrases = []
     for phrase, count in phrase_counter.most_common(5):
         if count >= 2:
+            # Find all occurrences with timestamps
+            phrase_timestamps = []
+            search_start = 0
+            while True:
+                pos = lower_transcript.find(phrase, search_start)
+                if pos == -1:
+                    break
+                # Estimate timestamp based on word position
+                word_position = len(lower_transcript[:pos].split())
+                estimated_time = (word_position / word_count * speech_time) if word_count > 0 else 0
+                phrase_timestamps.append(round(estimated_time, 2))
+                search_start = pos + 1
+            
             repetition_phrases.append({
                 'text': phrase,
                 'count': count,
-                'timestamps': []  # Would need more detailed analysis
+                'timestamps': phrase_timestamps[:count]  # Limit to actual count
             })
     
     # Count questions
@@ -2016,46 +2285,77 @@ def compute_speech_analysis_metrics(speech_timeline, transcript, speech_segments
     gesture_sync_ratio = 0
     face_on_screen_during_speech = 0
     
-    # Calculate gesture sync
+    # Calculate gesture sync - count gesture occurrences during speech
     if gesture_timeline and speech_segments:
         speech_with_gesture = 0
+        gesture_count_during_speech = 0
         
         for segment in speech_segments:
             seg_start = segment.get('start', 0)
             seg_end = segment.get('end', 0)
+            has_gesture = False
             
             # Check if any gestures occur during this speech segment
             for timestamp, gesture_data in gesture_timeline.items():
                 gesture_time = parse_timestamp_to_seconds(timestamp)
-                if gesture_time and seg_start <= gesture_time <= seg_end:
-                    speech_with_gesture += 1
-                    break
+                if gesture_time is not None and seg_start <= gesture_time <= seg_end:
+                    if gesture_data.get('gesture'):  # Ensure gesture exists
+                        has_gesture = True
+                        gesture_count_during_speech += 1
+            
+            if has_gesture:
+                speech_with_gesture += 1
         
         gesture_sync_ratio = speech_with_gesture / len(speech_segments) if speech_segments else 0
     
-    # Calculate face visibility during speech
-    if expression_timeline and speech_time > 0:
+    # Calculate face visibility during speech more accurately
+    if expression_timeline and speech_segments:
         face_time_during_speech = 0
+        total_speech_duration = sum(seg.get('end', 0) - seg.get('start', 0) for seg in speech_segments)
         
         for segment in speech_segments:
             seg_start = segment.get('start', 0)
             seg_end = segment.get('end', 0)
+            seg_duration = seg_end - seg_start
             
-            # Check expressions during this segment
+            # Count expression frames in this segment
+            face_frames_in_segment = 0
             for timestamp, expr_data in expression_timeline.items():
                 expr_time = parse_timestamp_to_seconds(timestamp)
-                if expr_time and seg_start <= expr_time <= seg_end:
-                    face_time_during_speech += 1
+                if expr_time is not None and seg_start <= expr_time <= seg_end:
+                    if expr_data.get('expression'):  # Ensure expression exists
+                        face_frames_in_segment += 1
+            
+            # Estimate face visibility duration in this segment
+            if face_frames_in_segment > 0:
+                # Assume face is visible for the portion of segment with expressions
+                face_duration = min(face_frames_in_segment, seg_duration)
+                face_time_during_speech += face_duration
         
-        face_on_screen_during_speech = face_time_during_speech / speech_time
+        face_on_screen_during_speech = face_time_during_speech / total_speech_duration if total_speech_duration > 0 else 0
     
-    # Find gesture emphasis moments
+    # Find gesture emphasis moments by correlating gestures with speech bursts
     gesture_emphasis_moments = []
     
-    # This would require more detailed word-level timing
-    # For now, we'll identify potential moments
+    if gesture_timeline and speech_bursts:
+        for burst in speech_bursts:
+            burst_start = burst['start']
+            burst_end = burst['end']
+            
+            # Check for gestures during this burst
+            for timestamp, gesture_data in gesture_timeline.items():
+                gesture_time = parse_timestamp_to_seconds(timestamp)
+                if gesture_time is not None and burst_start <= gesture_time <= burst_end:
+                    if gesture_data.get('gesture'):
+                        gesture_emphasis_moments.append({
+                            'timestamp': round(gesture_time, 2),
+                            'gesture': gesture_data.get('gesture'),
+                            'speech_context': 'burst',
+                            'intensity': burst.get('type', 'normal')
+                        })
+                        break  # One gesture per burst
     
-    # Visual absence analysis
+    # Visual absence analysis - more accurate detection
     off_camera_speech_segments = []
     for segment in speech_segments:
         # Check if face is visible during this segment
@@ -2063,30 +2363,43 @@ def compute_speech_analysis_metrics(speech_timeline, transcript, speech_segments
         seg_start = segment.get('start', 0)
         seg_end = segment.get('end', 0)
         
-        for timestamp in expression_timeline:
+        # Count expression detections in this segment
+        expression_count = 0
+        for timestamp, expr_data in expression_timeline.items():
             expr_time = parse_timestamp_to_seconds(timestamp)
-            if expr_time and seg_start <= expr_time <= seg_end:
-                seg_has_face = True
-                break
+            if expr_time is not None and seg_start <= expr_time <= seg_end:
+                if expr_data.get('expression'):  # Valid expression
+                    expression_count += 1
+                    seg_has_face = True
         
-        if not seg_has_face:
+        # Consider segment off-camera if no expressions detected
+        if not seg_has_face or expression_count == 0:
             off_camera_speech_segments.append({
                 'start': round(seg_start, 2),
                 'end': round(seg_end, 2),
-                'speech_content': segment.get('text', '')[:50] + '...'
+                'speech_content': segment.get('text', '')[:50] + '...' if segment.get('text') else ''
             })
     
     speech_only_ratio = len(off_camera_speech_segments) / len(speech_segments) if speech_segments else 0
     
-    # Count expression variety during speech
+    # Count expression variety during speech with better normalization
     expressions_during_speech = set()
+    expression_counts = {}
+    
     for segment in speech_segments:
+        seg_start = segment.get('start', 0)
+        seg_end = segment.get('end', 0)
+        
         for timestamp, expr_data in expression_timeline.items():
             expr_time = parse_timestamp_to_seconds(timestamp)
-            if expr_time and segment.get('start', 0) <= expr_time <= segment.get('end', 0):
-                expressions_during_speech.add(expr_data.get('expression', 'unknown'))
+            if expr_time is not None and seg_start <= expr_time <= seg_end:
+                expression = expr_data.get('expression')
+                if expression and expression != 'unknown':
+                    expressions_during_speech.add(expression)
+                    expression_counts[expression] = expression_counts.get(expression, 0) + 1
     
-    expression_variety_during_speech = len(expressions_during_speech) / 10  # Normalize to 0-1
+    # Normalize based on typical expression count (7 basic expressions)
+    expression_variety_during_speech = min(len(expressions_during_speech) / 7, 1.0)
     
     metrics['speech_visual_alignment'] = {
         'gesture_emphasis_moments': gesture_emphasis_moments,

@@ -1,20 +1,155 @@
+Goal: Extract scene pacing features as structured data for ML analysis
+
 Input File: unified_analysis/[video_id].json
 
-Task:
-- Evaluate the pacing of the video based on scene changes and movement patterns.
-- Classify as:
-  - Fast-cut / Moderate / Slow-paced
-- Count number of shots and average duration.
-- Report whether pacing accelerates or slows down toward the end.
+You will receive precomputed scene pacing metrics:
+- total_shots
+- avg_shot_duration
+- shots_per_minute
+- shortest_shot
+- longest_shot
+- shot_duration_variance
+- pacing_classification
+- rhythm_consistency
+- pacing_curve
+- acceleration_score
+- cut_density_zones
+- intro_pacing
+- outro_pacing
+- visual_load_per_scene
+- shot_type_changes
+- pacing_tags
+
+Raw Timeline Data (for validation):
+- sceneChangeTimeline
+- camera_distance_timeline
+- object_timeline
+
+Output the following 6 modular blocks:
+
+1. pacingCoreMetrics
+{
+  "totalShots": int,
+  "avgShotDuration": float,
+  "shotsPerMinute": float,
+  "shortestShot": float,
+  "longestShot": float,
+  "visualLoadPerScene": float,
+  "shotTypeChanges": int,
+  "confidence": float
+}
+
+2. pacingDynamics
+{
+  "pacingClassification": "rapid" | "fast" | "moderate" | "slow",
+  "rhythmConsistency": "consistent" | "varied" | "erratic",
+  "shotDurationVariance": float,
+  "accelerationScore": float,
+  "accelerationTrend": "accelerating" | "decelerating" | "stable",
+  "introPacing": int,
+  "outroPacing": int,
+  "tempoBalance": {
+    "earlyCuts": int,
+    "lateCuts": int,
+    "balanceIndex": float
+  },
+  "confidence": float
+}
+
+3. pacingInteractions
+{
+  "pacingCurve": {
+    "0-10s": int,
+    "10-20s": int,
+    "20-30s": int
+  },
+  "cutDensityZones": ["20-30s", "45-55s"],
+  "objectDensityPacing": {
+    "avgObjectsPerShot": float,
+    "complexityLevel": "low" | "moderate" | "high"
+  },
+  "shotCameraAlignment": {
+    "cameraChangesPerShot": float,
+    "alignmentScore": float
+  },
+  "confidence": float
+}
+
+4. pacingKeyEvents
+{
+  "peakCutMoments": [
+    {
+      "window": "20-30s",
+      "cutCount": int,
+      "intensity": float
+    }
+  ],
+  "longestShotMoment": {
+    "timestamp": string,
+    "duration": float,
+    "position": "intro" | "middle" | "outro"
+  },
+  "shortestShotMoment": {
+    "timestamp": string,
+    "duration": float,
+    "position": "intro" | "middle" | "outro"
+  },
+  "montageSegments": [
+    {"start": "20s", "end": "30s", "avgShotDuration": float}
+  ],
+  "confidence": float
+}
+
+5. pacingPatterns
+{
+  "pacingTags": [
+    "quick_cuts",
+    "accelerating_pace",
+    "decelerating_pace",
+    "rhythmic_editing",
+    "has_montage_sections",
+    "mtv_style",
+    "experimental_pacing"
+  ],
+  "editingStyle": "mtv_style" | "classic_narrative" | "rhythmic" | "experimental",
+  "classifiedPatterns": {
+    "hasRapidPacing": boolean,
+    "isRhythmic": boolean,
+    "isExperimental": boolean,
+    "hasMontageSections": boolean
+  },
+  "mlTags": ["fast_paced", "variable_rhythm", "high_cut_density"],
+  "confidence": float
+}
+
+6. pacingQuality
+{
+  "dataCompleteness": float,
+  "sceneDetectionRate": float,
+  "cameraDataAvailable": boolean,
+  "objectDataAvailable": boolean,
+  "cutDetectionConfidence": float,
+  "overallConfidence": float
+}
 
 Constraints:
-- Use sceneChangeTimeline and objectTimeline for pacing cues.
-
-Response Format:
-{
-  "pacing": "...",
-  "totalShots": ...,
-  "avgShotDuration": "... seconds",
-  "pacingTrend": "...",
-  "notes": "..."
-}
+- Output ONLY the 6 JSON blocks, no additional text
+- All timestamps must align with input data
+- Include confidence scores based on data quality (0.0-1.0)
+- Report absences explicitly (empty arrays, null values)
+- Use descriptive values, not prescriptive judgments
+- Classification thresholds:
+  - pacingClassification: "rapid" if avg_shot_duration < 2.0, "fast" if 2.0-4.0, "moderate" if 4.0-8.0, "slow" if ≥ 8.0
+  - rhythmConsistency: "consistent" if variance < 1.0, "varied" if 1.0-3.0, "erratic" if ≥ 3.0
+  - accelerationTrend: "accelerating" if score > 0.3, "decelerating" if < -0.3, "stable" if between
+  - editingStyle = "mtv_style" if avg_shot_duration < 1.5
+  - editingStyle = "classic_narrative" if avg_shot_duration > 4.0 AND rhythm_consistency = "consistent"
+  - editingStyle = "rhythmic" if rhythm_consistency = "consistent" AND variance < 1.0
+  - editingStyle = "experimental" if variance > avg_shot_duration
+  - complexityLevel: "high" if visual_load_per_scene > 5.0, "moderate" if 2.0-5.0, "low" if < 2.0
+  - position: "intro" if in first 20%, "outro" if in last 20%, else "middle"
+  - balanceIndex = intro_pacing / (intro_pacing + outro_pacing)
+  - hasRapidPacing = true if pacingClassification in ["rapid", "fast"]
+  - isRhythmic = true if rhythmConsistency = "consistent"
+  - isExperimental = true if shot_duration_variance > avg_shot_duration
+  - hasMontageSections = true if cut_density_zones.length > 0

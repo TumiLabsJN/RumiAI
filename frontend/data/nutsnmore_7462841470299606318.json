@@ -1,0 +1,1556 @@
+{
+  "id": "nutsnmore_7462841470299606318",
+  "username": "nutsnmore",
+  "videoId": "7462841470299606318",
+  "title": "\ud83c\udf4c\ud83c\udf6b\u2600\ufe0f Whip up a healthy banana sundae with our Coconut Chocolate Almond Butter Spread \u2013 packed with p",
+  "caption": "\ud83c\udf4c\ud83c\udf6b\u2600\ufe0f Whip up a healthy banana sundae with our Coconut Chocolate Almond Butter Spread \u2013 packed with protein and full of flavor. \ud83c\udf34\u2728 \n\n#HealthyEats #BananaSundae #AlmondButterLove  ",
+  "views": 1138,
+  "likes": 25,
+  "comments": 0,
+  "shares": 0,
+  "duration": 9,
+  "analysisComplete": true,
+  "promptsCompleted": 1,
+  "promptResults": {
+    "hook_analysis": {
+      "prompt": "CONTEXT DATA:\n{\n  \"duration\": 9,\n  \"caption\": \"\\ud83c\\udf4c\\ud83c\\udf6b\\u2600\\ufe0f Whip up a healthy banana sundae with our Coconut Chocolate Almond Butter Spread \\u2013 packed with protein and full of flavor. \\ud83c\\udf34\\u2728 \\n\\n#HealthyEats #BananaSundae #AlmondButterLove  \",\n  \"engagement_stats\": {\n    \"views\": 1138,\n    \"likes\": 25,\n    \"comments\": 0,\n    \"shares\": 0,\n    \"engagementRate\": 2.196836555360281\n  },\n  \"first_3_seconds\": {}\n}\n\nANALYSIS REQUEST:\nInput File: unified_analysis/[video_id].json\n\nTask:\n- Determine whether this video has a clear hook in the first 5 seconds.\n- Classify the hook type:\n  - Visual (gesture, object appears)\n  - Text overlay (e.g., \"Wait for it\", \"Watch this\")\n  - Spoken hook (e.g., \"Let me tell you\u2026\")\n  - Camera movement (e.g., zoom, whip pan)\n  - None\n- Timestamp when the hook occurs.\n- Rate the hook strength: Strong / Medium / Weak.\n\nConstraints:\n- Use gestureTimeline, sceneChangeTimeline, speechTimeline, and textOverlayTimeline to infer the hook.\n- If no hook is present, return 'None'.\n\nResponse Format:\n{\n  \"hookType\": \"...\",\n  \"hookTimestamp\": \"...\",\n  \"hookStrength\": \"...\",\n  \"notes\": \"...\"\n}",
+      "response": "Based on the limited context data provided, I cannot definitively determine if there is a hook in the first 5 seconds or analyze its characteristics. The provided JSON does not include the detailed timeline information (gestureTimeline, sceneChangeTimeline, speechTimeline, textOverlayTimeline) that would be necessary to make this assessment.\n\nHowever, I'll provide a response based on the available information:\n\n{\n  \"hookType\": \"None\",\n  \"hookTimestamp\": \"N/A\",\n  \"hookStrength\": \"N/A\",\n  \"notes\": \"Insufficient timeline data provided to determine presence or type of hook. Only duration (9 seconds) and engagement metrics are available in the context data.\"\n}\n\nTo properly analyze the hook, I would need access to:\n- Scene change information\n- Text overlay timing\n- Speech/audio timeline\n- Gesture or action timeline\nfrom the first 5 seconds of the video.",
+      "timestamp": "2025-06-24T12:44:30.175175",
+      "model": "claude-3-5-sonnet-20241022"
+    }
+  },
+  "timelines": {
+    "gestureTimeline": {},
+    "expressionTimeline": {},
+    "objectTimeline": {
+      "0.00": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.8379665613174438
+        },
+        {
+          "object": "bagged packaged goods",
+          "confidence": 0.5444933772087097
+        }
+      ],
+      "0.10": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.8379665613174438
+        },
+        {
+          "object": "bagged packaged goods",
+          "confidence": 0.5444933772087097
+        }
+      ],
+      "0.21": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.8379665613174438
+        },
+        {
+          "object": "bagged packaged goods",
+          "confidence": 0.5444933772087097
+        }
+      ],
+      "0.31": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.8379665613174438
+        },
+        {
+          "object": "bagged packaged goods",
+          "confidence": 0.5444933772087097
+        }
+      ],
+      "0.41": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.8379665613174438
+        },
+        {
+          "object": "bagged packaged goods",
+          "confidence": 0.5444933772087097
+        }
+      ],
+      "0.52": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.8379665613174438
+        }
+      ],
+      "0.62": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.8379665613174438
+        }
+      ],
+      "0.73": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.8379665613174438
+        }
+      ],
+      "0.83": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.8379665613174438
+        }
+      ],
+      "0.93": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.8379665613174438
+        }
+      ],
+      "1.04": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.8379665613174438
+        }
+      ],
+      "1.14": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.8379665613174438
+        }
+      ],
+      "1.24": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.8379665613174438
+        }
+      ],
+      "1.35": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.8379665613174438
+        }
+      ],
+      "1.45": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.8379665613174438
+        }
+      ],
+      "1.56": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.8379665613174438
+        }
+      ],
+      "1.66": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.8379665613174438
+        }
+      ],
+      "1.76": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.8379665613174438
+        }
+      ],
+      "1.87": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.8379665613174438
+        }
+      ],
+      "1.97": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.8379665613174438
+        }
+      ],
+      "2.07": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.8118350505828857
+        }
+      ],
+      "2.18": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.8118350505828857
+        }
+      ],
+      "2.28": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.8118350505828857
+        },
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6140538454055786
+        }
+      ],
+      "2.39": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.8118350505828857
+        },
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6140538454055786
+        }
+      ],
+      "2.49": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.8118350505828857
+        },
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6140538454055786
+        }
+      ],
+      "2.59": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.8118350505828857
+        },
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6140538454055786
+        }
+      ],
+      "2.70": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.8118350505828857
+        },
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6140538454055786
+        }
+      ],
+      "2.80": [
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6937406659126282
+        }
+      ],
+      "2.90": [
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6937406659126282
+        }
+      ],
+      "3.01": [
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6937406659126282
+        }
+      ],
+      "3.11": [
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6937406659126282
+        },
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6296651363372803
+        }
+      ],
+      "3.22": [
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6937406659126282
+        },
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6296651363372803
+        }
+      ],
+      "3.32": [
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6937406659126282
+        },
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6296651363372803
+        }
+      ],
+      "3.42": [
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6937406659126282
+        },
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6296651363372803
+        }
+      ],
+      "3.53": [
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6937406659126282
+        },
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6296651363372803
+        }
+      ],
+      "3.63": [
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6937406659126282
+        },
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6296651363372803
+        }
+      ],
+      "3.73": [
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6937406659126282
+        },
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6296651363372803
+        }
+      ],
+      "3.84": [
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6937406659126282
+        },
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6296651363372803
+        }
+      ],
+      "3.94": [
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6937406659126282
+        },
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6296651363372803
+        }
+      ],
+      "4.05": [
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6937406659126282
+        },
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6296651363372803
+        }
+      ],
+      "4.15": [
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6937406659126282
+        },
+        {
+          "object": "bottled and jarred packaged goods",
+          "confidence": 0.6296651363372803
+        }
+      ],
+      "4.25": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.685905396938324
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6590386033058167
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6496529579162598
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5969894528388977
+        }
+      ],
+      "4.36": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.685905396938324
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6590386033058167
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6496529579162598
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5969894528388977
+        }
+      ],
+      "4.46": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.685905396938324
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6590386033058167
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6496529579162598
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5969894528388977
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5854789614677429
+        }
+      ],
+      "4.56": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.685905396938324
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6590386033058167
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6496529579162598
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5969894528388977
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5854789614677429
+        }
+      ],
+      "4.67": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.685905396938324
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6590386033058167
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6496529579162598
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5969894528388977
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5854789614677429
+        }
+      ],
+      "4.77": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.685905396938324
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6590386033058167
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6496529579162598
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5969894528388977
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5854789614677429
+        }
+      ],
+      "4.88": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.685905396938324
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6590386033058167
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6496529579162598
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5969894528388977
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5854789614677429
+        }
+      ],
+      "4.98": [
+        {
+          "object": "fruit",
+          "confidence": 0.6590386033058167
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6496529579162598
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5969894528388977
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5854789614677429
+        },
+        {
+          "object": "food",
+          "confidence": 0.6597069501876831
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6141814589500427
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6209859251976013
+        }
+      ],
+      "5.08": [
+        {
+          "object": "fruit",
+          "confidence": 0.6590386033058167
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6496529579162598
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5969894528388977
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5854789614677429
+        },
+        {
+          "object": "food",
+          "confidence": 0.6597069501876831
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6141814589500427
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6209859251976013
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.7161033153533936
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6592903733253479
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6626575589179993
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6794094443321228
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6832069158554077
+        }
+      ],
+      "5.19": [
+        {
+          "object": "fruit",
+          "confidence": 0.6590386033058167
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6496529579162598
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5969894528388977
+        },
+        {
+          "object": "food",
+          "confidence": 0.6597069501876831
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6141814589500427
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6209859251976013
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.7161033153533936
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6592903733253479
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6626575589179993
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6794094443321228
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6832069158554077
+        }
+      ],
+      "5.29": [
+        {
+          "object": "fruit",
+          "confidence": 0.6590386033058167
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6496529579162598
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5969894528388977
+        },
+        {
+          "object": "food",
+          "confidence": 0.6597069501876831
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6141814589500427
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6209859251976013
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6592903733253479
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6626575589179993
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.592396080493927
+        }
+      ],
+      "5.39": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.7651016712188721
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6060022711753845
+        }
+      ],
+      "5.50": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.7651016712188721
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6060022711753845
+        }
+      ],
+      "5.60": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.7651016712188721
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6060022711753845
+        },
+        {
+          "object": "food",
+          "confidence": 0.578537106513977
+        }
+      ],
+      "5.71": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.7651016712188721
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6060022711753845
+        },
+        {
+          "object": "food",
+          "confidence": 0.578537106513977
+        }
+      ],
+      "5.81": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.7651016712188721
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6060022711753845
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6568732857704163
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5622714757919312
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5730800032615662
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5644916296005249
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5700446367263794
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5358009934425354
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5210457444190979
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5144681930541992
+        }
+      ],
+      "5.91": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.7651016712188721
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6060022711753845
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5622714757919312
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5730800032615662
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5700446367263794
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5144681930541992
+        }
+      ],
+      "6.02": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.7651016712188721
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6060022711753845
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5622714757919312
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5730800032615662
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5700446367263794
+        }
+      ],
+      "6.12": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.7651016712188721
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6060022711753845
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5622714757919312
+        }
+      ],
+      "6.22": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.7225176692008972
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6583273410797119
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5815373063087463
+        },
+        {
+          "object": "dessert",
+          "confidence": 0.5920565128326416
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5802711844444275
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5875260829925537
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6020159721374512
+        }
+      ],
+      "6.33": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.7225176692008972
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6583273410797119
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5815373063087463
+        },
+        {
+          "object": "dessert",
+          "confidence": 0.5920565128326416
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5802711844444275
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5875260829925537
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6020159721374512
+        }
+      ],
+      "6.43": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.7225176692008972
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6583273410797119
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5815373063087463
+        },
+        {
+          "object": "dessert",
+          "confidence": 0.5920565128326416
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5802711844444275
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5875260829925537
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6020159721374512
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5535441040992737
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6345474123954773
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6092961430549622
+        }
+      ],
+      "6.54": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.7225176692008972
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6583273410797119
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5815373063087463
+        },
+        {
+          "object": "dessert",
+          "confidence": 0.5920565128326416
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5875260829925537
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6020159721374512
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5535441040992737
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6345474123954773
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6092961430549622
+        }
+      ],
+      "6.64": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.7225176692008972
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6583273410797119
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5815373063087463
+        },
+        {
+          "object": "dessert",
+          "confidence": 0.5920565128326416
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5875260829925537
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6020159721374512
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5535441040992737
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6345474123954773
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6092961430549622
+        }
+      ],
+      "6.74": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.7225176692008972
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6583273410797119
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5815373063087463
+        },
+        {
+          "object": "dessert",
+          "confidence": 0.5920565128326416
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5875260829925537
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6020159721374512
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5535441040992737
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6345474123954773
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6092961430549622
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5643086433410645
+        }
+      ],
+      "6.85": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.7225176692008972
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6583273410797119
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5815373063087463
+        },
+        {
+          "object": "dessert",
+          "confidence": 0.5920565128326416
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5875260829925537
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6020159721374512
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5535441040992737
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6345474123954773
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6092961430549622
+        }
+      ],
+      "6.95": [
+        {
+          "object": "packaged goods",
+          "confidence": 0.7225176692008972
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6583273410797119
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5815373063087463
+        },
+        {
+          "object": "dessert",
+          "confidence": 0.5920565128326416
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5875260829925537
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6020159721374512
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5535441040992737
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6345474123954773
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6092961430549622
+        }
+      ],
+      "7.05": [
+        {
+          "object": "fruit",
+          "confidence": 0.6583273410797119
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5815373063087463
+        },
+        {
+          "object": "dessert",
+          "confidence": 0.5920565128326416
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5875260829925537
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6020159721374512
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5535441040992737
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6345474123954773
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.6092961430549622
+        },
+        {
+          "object": "fruit",
+          "confidence": 0.5038880109786987
+        }
+      ],
+      "7.16": [
+        {
+          "object": "dessert",
+          "confidence": 0.7030321955680847
+        }
+      ],
+      "7.26": [
+        {
+          "object": "dessert",
+          "confidence": 0.7030321955680847
+        }
+      ],
+      "7.37": [
+        {
+          "object": "dessert",
+          "confidence": 0.7030321955680847
+        }
+      ],
+      "7.47": [
+        {
+          "object": "dessert",
+          "confidence": 0.7030321955680847
+        }
+      ],
+      "7.57": [
+        {
+          "object": "dessert",
+          "confidence": 0.7030321955680847
+        }
+      ],
+      "7.68": [
+        {
+          "object": "dessert",
+          "confidence": 0.7030321955680847
+        },
+        {
+          "object": "food",
+          "confidence": 0.647196352481842
+        }
+      ],
+      "7.78": [
+        {
+          "object": "dessert",
+          "confidence": 0.7030321955680847
+        },
+        {
+          "object": "food",
+          "confidence": 0.647196352481842
+        },
+        {
+          "object": "packaged goods",
+          "confidence": 0.5537381172180176
+        }
+      ],
+      "7.88": [
+        {
+          "object": "dessert",
+          "confidence": 0.7030321955680847
+        },
+        {
+          "object": "food",
+          "confidence": 0.647196352481842
+        },
+        {
+          "object": "packaged goods",
+          "confidence": 0.5537381172180176
+        }
+      ],
+      "7.99": [
+        {
+          "object": "dessert",
+          "confidence": 0.7030321955680847
+        },
+        {
+          "object": "food",
+          "confidence": 0.647196352481842
+        }
+      ],
+      "8.09": [
+        {
+          "object": "dessert",
+          "confidence": 0.7030321955680847
+        },
+        {
+          "object": "food",
+          "confidence": 0.647196352481842
+        }
+      ],
+      "8.20": [
+        {
+          "object": "dessert",
+          "confidence": 0.7030321955680847
+        },
+        {
+          "object": "food",
+          "confidence": 0.647196352481842
+        },
+        {
+          "object": "spoon",
+          "confidence": 0.5236989855766296
+        }
+      ],
+      "8.30": [
+        {
+          "object": "dessert",
+          "confidence": 0.7030321955680847
+        },
+        {
+          "object": "food",
+          "confidence": 0.647196352481842
+        },
+        {
+          "object": "spoon",
+          "confidence": 0.5236989855766296
+        }
+      ],
+      "8.40": [
+        {
+          "object": "dessert",
+          "confidence": 0.7030321955680847
+        },
+        {
+          "object": "food",
+          "confidence": 0.647196352481842
+        },
+        {
+          "object": "spoon",
+          "confidence": 0.5236989855766296
+        }
+      ],
+      "8.51": [
+        {
+          "object": "dessert",
+          "confidence": 0.7030321955680847
+        },
+        {
+          "object": "food",
+          "confidence": 0.647196352481842
+        },
+        {
+          "object": "spoon",
+          "confidence": 0.5236989855766296
+        }
+      ],
+      "8.61": [
+        {
+          "object": "dessert",
+          "confidence": 0.7030321955680847
+        },
+        {
+          "object": "food",
+          "confidence": 0.647196352481842
+        },
+        {
+          "object": "spoon",
+          "confidence": 0.5236989855766296
+        }
+      ],
+      "8.71": [
+        {
+          "object": "dessert",
+          "confidence": 0.7030321955680847
+        },
+        {
+          "object": "food",
+          "confidence": 0.647196352481842
+        }
+      ],
+      "8.82": [
+        {
+          "object": "dessert",
+          "confidence": 0.7030321955680847
+        },
+        {
+          "object": "food",
+          "confidence": 0.647196352481842
+        }
+      ],
+      "8.92": [
+        {
+          "object": "dessert",
+          "confidence": 0.7030321955680847
+        },
+        {
+          "object": "food",
+          "confidence": 0.647196352481842
+        }
+      ],
+      "9.03": [
+        {
+          "object": "dessert",
+          "confidence": 0.7030321955680847
+        },
+        {
+          "object": "food",
+          "confidence": 0.647196352481842
+        }
+      ],
+      "9.13": [
+        {
+          "object": "dessert",
+          "confidence": 0.7030321955680847
+        }
+      ]
+    },
+    "stickerTimeline": {},
+    "textOverlayTimeline": {
+      "1.56": {
+        "text": "MORE PROTEN",
+        "confidence": 0.9154740571975708
+      },
+      "1.24": {
+        "text": "NET WT 180LE5",
+        "confidence": 0.7241999506950378
+      },
+      "0.00": {
+        "text": "NET WT. 160Z (1LB) 456",
+        "confidence": 0.7594467997550964
+      },
+      "5.81": {
+        "text": "favorite macro friendly",
+        "confidence": 0.9971625804901123
+      },
+      "2.28": {
+        "text": "POV: you found your new",
+        "confidence": 0.9955072999000549
+      },
+      "0.83": {
+        "text": "chocolate",
+        "confidence": 0.9572588205337524
+      },
+      "2.18": {
+        "text": "puts",
+        "confidence": 0.7896502017974854
+      },
+      "3.32": {
+        "text": "more",
+        "confidence": 0.9602842330932617
+      },
+      "1.04": {
+        "text": "NET WT 1602LE4546",
+        "confidence": 0.7622277736663818
+      },
+      "6.64": {
+        "text": "HANGRI",
+        "confidence": 0.8651793003082275
+      },
+      "7.57": {
+        "text": "HANGR dessert.",
+        "confidence": 0.9002577066421509
+      },
+      "1.14": {
+        "text": "NG",
+        "confidence": 0.8251850008964539
+      },
+      "1.35": {
+        "text": "MORE",
+        "confidence": 0.9438242316246033
+      },
+      "0.31": {
+        "text": "NET WT. 160Z (ALB)66",
+        "confidence": 0.8524824976921082
+      },
+      "1.97": {
+        "text": "chocolate almon",
+        "confidence": 0.942314863204956
+      },
+      "5.71": {
+        "text": "favorite macro fricndly",
+        "confidence": 0.927821695804596
+      },
+      "6.22": {
+        "text": "HANGN",
+        "confidence": 0.897942066192627
+      },
+      "0.93": {
+        "text": "NET WT 180Z (LB4546",
+        "confidence": 0.8777559995651245
+      },
+      "0.10": {
+        "text": "NET WT. 160Z (1L8)66",
+        "confidence": 0.7602880597114563
+      },
+      "1.76": {
+        "text": "is better!",
+        "confidence": 1
+      },
+      "0.52": {
+        "text": "chocal",
+        "confidence": 0.9222147464752197
+      },
+      "2.39": {
+        "text": "HANGRY",
+        "confidence": 0.9995562434196472
+      },
+      "7.47": {
+        "text": "HANGRY",
+        "confidence": 0.8965682983398438
+      },
+      "0.41": {
+        "text": "NET WT. 160Z (ILB)66",
+        "confidence": 0.8875982165336609
+      },
+      "6.33": {
+        "text": "HANGN.",
+        "confidence": 0.867896556854248
+      },
+      "1.66": {
+        "text": "te is better!",
+        "confidence": 0.8884919881820679
+      },
+      "1.87": {
+        "text": "s better!",
+        "confidence": 1
+      },
+      "2.90": {
+        "text": "mor dessert. \"",
+        "confidence": 0.9479911923408508
+      },
+      "3.73": {
+        "text": "Outs dessert.",
+        "confidence": 0.8675329089164734
+      },
+      "5.50": {
+        "text": "favorne macro friendly",
+        "confidence": 0.8901047706604004
+      },
+      "5.60": {
+        "text": "TINGNY",
+        "confidence": 0.7665496468544006
+      },
+      "8.20": {
+        "text": "HANGA",
+        "confidence": 0.8958979845046997
+      },
+      "5.39": {
+        "text": "favornte macru friendly",
+        "confidence": 0.8547288179397583
+      },
+      "2.07": {
+        "text": "POV:",
+        "confidence": 0.8791132569313049
+      },
+      "6.43": {
+        "text": "HANGNI",
+        "confidence": 0.906096875667572
+      },
+      "6.54": {
+        "text": "HANGNI.",
+        "confidence": 0.7802149653434753
+      },
+      "1.45": {
+        "text": "chocolate alm",
+        "confidence": 0.924523115158081
+      },
+      "0.21": {
+        "text": "NET WT. 160Z (1LB)66",
+        "confidence": 0.7771241664886475
+      }
+    },
+    "sceneChangeTimeline": {},
+    "cameraDistanceTimeline": {},
+    "speechTimeline": {},
+    "audioRatioTimeline": {},
+    "frames": {
+      "0": {
+        "timestamp": 0,
+        "frame_number": 0,
+        "path": "downloads/analysis/nutsnmore_7462841470299606318/frames/frame_000_0.0s.jpg"
+      },
+      "5": {
+        "timestamp": 5,
+        "frame_number": 144,
+        "path": "downloads/analysis/nutsnmore_7462841470299606318/frames/frame_001_5.0s.jpg"
+      },
+      "9.306557": {
+        "timestamp": 9.306557,
+        "frame_number": 269,
+        "path": "downloads/analysis/nutsnmore_7462841470299606318/frames/frame_002_9.3s.jpg"
+      }
+    }
+  },
+  "insights": {
+    "primaryObjects": [
+      "fruit",
+      "packaged goods",
+      "bottled and jarred packaged goods",
+      "dessert",
+      "food"
+    ],
+    "dominantExpressions": [],
+    "creativeDensity": 14.11111111111111,
+    "gestureCount": 0,
+    "textOverlayFrequency": 4.222222222222222,
+    "humanPresenceRate": 0,
+    "objectDiversity": 7,
+    "sceneComplexity": 0,
+    "engagementIndicators": []
+  },
+  "gvi_data": {
+    "objects": 89,
+    "text": 38,
+    "speech": 0
+  }
+}

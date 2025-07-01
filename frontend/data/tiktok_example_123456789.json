@@ -1,0 +1,22 @@
+{
+  "id": "tiktok_example_123456789",
+  "username": "tiktok",
+  "videoId": "example",
+  "title": "No title",
+  "caption": "",
+  "views": 0,
+  "likes": 0,
+  "comments": 0,
+  "shares": 0,
+  "duration": 0,
+  "analysisComplete": false,
+  "promptsCompleted": 0,
+  "promptResults": {},
+  "timelines": {},
+  "insights": {},
+  "gvi_data": {
+    "objects": 0,
+    "text": 0,
+    "speech": 0
+  }
+}

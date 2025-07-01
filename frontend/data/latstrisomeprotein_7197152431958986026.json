@@ -1,0 +1,148 @@
+{
+  "id": "latstrisomeprotein_7197152431958986026",
+  "username": "latstrisomeprotein",
+  "videoId": "7197152431958986026",
+  "title": "#nutsnmore #proteincookiedough 109 calories and 9g of protein! Check out our review of this cookie d",
+  "caption": "#nutsnmore #proteincookiedough 109 calories and 9g of protein! Check out our review of this cookie dough that doesn\u2019t even need refrigerated!! #fitness #protein #proteinsnack #fyp #girlswholift @jenna7394 @katelesueur ",
+  "views": 1936,
+  "likes": 11,
+  "comments": 0,
+  "shares": 1,
+  "duration": 78,
+  "analysisComplete": true,
+  "promptsCompleted": 3,
+  "promptResults": {
+    "cta_alignment": {
+      "prompt": "CONTEXT DATA:\n{\n  \"duration\": 78,\n  \"caption\": \"#nutsnmore #proteincookiedough 109 calories and 9g of protein! Check out our review of this cookie dough that doesn\\u2019t even need refrigerated!! #fitness #protein #proteinsnack #fyp #girlswholift @jenna7394 @katelesueur \",\n  \"engagement_stats\": {\n    \"views\": 1936,\n    \"likes\": 11,\n    \"comments\": 0,\n    \"shares\": 1,\n    \"engagementRate\": 0.5681818181818182\n  },\n  \"text_timeline\": {},\n  \"speech_timeline\": {}\n}\n\nANALYSIS REQUEST:\nInput File: unified_analysis/[video_id].json\n\nTask:\n- Detect whether there are any Calls-To-Action (CTAs) present in this video.\n- Identify how CTAs are delivered:\n  - Spoken (speechTimeline)\n  - Text overlay (textOverlayTimeline)\n  - Sticker or graphic (stickerTimeline)\n  - Gesture (e.g., pointing to bio link)\n- Determine when the CTA appears (timestamps).\n- Rate the CTA strength: Strong / Medium / Weak.\n- Check if CTA timing aligns with key moments (hook, climax, ending).\n\nConstraints:\n- Use speechTimeline, textOverlayTimeline, gestureTimeline, and stickerTimeline.\n- If no CTA is detected, explicitly return that.\n\nResponse Format:\n{\n  \"ctaPresence\": true/false,\n  \"ctaType\": [...],\n  \"ctaTimestamps\": [...],\n  \"ctaStrength\": \"...\",\n  \"notes\": \"...\"\n}",
+      "response": "Based on the provided context data, I'll analyze for CTAs:\n\n{\n  \"ctaPresence\": true,\n  \"ctaType\": [\"Caption CTA\"],\n  \"ctaTimestamps\": [\"Throughout video via caption\"],\n  \"ctaStrength\": \"Weak\",\n  \"notes\": \"The only detectable CTA is in the caption where it says 'Check out our review of this cookie dough'. There are no speech transcripts or text overlay timelines provided to analyze for additional CTAs. The CTA is relatively passive and informational rather than strongly directive. The caption also includes relevant hashtags like #nutsnmore #proteincookiedough which help with discovery but aren't strong CTAs. Without access to the visual content, I cannot confirm if there were any gestural CTAs like pointing to links or other visual prompts.\"\n}\n\nThe CTA analysis is limited by the available data, which only includes the caption and engagement statistics. A more complete analysis would require the speech, text overlay, and visual timelines to identify any additional CTAs that may have been present in the video content itself.",
+      "timestamp": "2025-06-24T11:05:50.295878",
+      "model": "claude-3-5-sonnet-20241022"
+    },
+    "hook_analysis": {
+      "prompt": "CONTEXT DATA:\n{\n  \"duration\": 78,\n  \"caption\": \"#nutsnmore #proteincookiedough 109 calories and 9g of protein! Check out our review of this cookie dough that doesn\\u2019t even need refrigerated!! #fitness #protein #proteinsnack #fyp #girlswholift @jenna7394 @katelesueur \",\n  \"engagement_stats\": {\n    \"views\": 1936,\n    \"likes\": 11,\n    \"comments\": 0,\n    \"shares\": 1,\n    \"engagementRate\": 0.5681818181818182\n  },\n  \"first_3_seconds\": {}\n}\n\nANALYSIS REQUEST:\nInput File: unified_analysis/[video_id].json\n\nTask:\n- Determine whether this video has a clear hook in the first 5 seconds.\n- Classify the hook type:\n  - Visual (gesture, object appears)\n  - Text overlay (e.g., \"Wait for it\", \"Watch this\")\n  - Spoken hook (e.g., \"Let me tell you\u2026\")\n  - Camera movement (e.g., zoom, whip pan)\n  - None\n- Timestamp when the hook occurs.\n- Rate the hook strength: Strong / Medium / Weak.\n\nConstraints:\n- Use gestureTimeline, sceneChangeTimeline, speechTimeline, and textOverlayTimeline to infer the hook.\n- If no hook is present, return 'None'.\n\nResponse Format:\n{\n  \"hookType\": \"...\",\n  \"hookTimestamp\": \"...\",\n  \"hookStrength\": \"...\",\n  \"notes\": \"...\"\n}",
+      "response": "I apologize, but I notice that the provided context data doesn't include the detailed timelines (gestureTimeline, sceneChangeTimeline, speechTimeline, textOverlayTimeline) that would be necessary to make a complete assessment of the hook. Additionally, the \"first_3_seconds\" object is empty.\n\nWithout this timeline data, I cannot make a definitive assessment about the presence or type of hook in the first 5 seconds of the video.\n\nHere's my response based on the limited available information:\n\n{\n  \"hookType\": \"Unable to determine\",\n  \"hookTimestamp\": \"Unable to determine\",\n  \"hookStrength\": \"Unable to determine\",\n  \"notes\": \"Insufficient timeline data provided to analyze the hook. The context data is missing required timeline information about gestures, scene changes, speech, and text overlays in the first 5 seconds of the video.\"\n}\n\nTo make an accurate assessment, I would need the timeline data showing what occurs in the opening seconds of the video, including any text overlays, speech, gestures, or camera movements.",
+      "timestamp": "2025-06-24T11:05:43.172916",
+      "model": "claude-3-5-sonnet-20241022"
+    },
+    "engagement_triggers": {
+      "prompt": "CONTEXT DATA:\n{\n  \"duration\": 78,\n  \"caption\": \"#nutsnmore #proteincookiedough 109 calories and 9g of protein! Check out our review of this cookie dough that doesn\\u2019t even need refrigerated!! #fitness #protein #proteinsnack #fyp #girlswholift @jenna7394 @katelesueur \",\n  \"engagement_stats\": {\n    \"views\": 1936,\n    \"likes\": 11,\n    \"comments\": 0,\n    \"shares\": 1,\n    \"engagementRate\": 0.5681818181818182\n  }\n}\n\nANALYSIS REQUEST:\nInput File: unified_analysis/[video_id].json\n\nTask:\n- Identify all engagement triggers:\n  - Finger pointing\n  - On-screen text like \"Follow\"\n  - Meme stickers\n  - Dramatic expressions\n- Classify them by type and timing.\n\nConstraints:\n- Use gestureTimeline, stickerTimeline, textOverlayTimeline, and expressionTimeline.\n\nResponse Format:\n{\n  \"engagementTriggers\": [\n    { \"type\": \"...\", \"timestamp\": ... },\n    ...\n  ],\n  \"notes\": \"...\"\n}",
+      "response": "I apologize, but I notice that in the provided context data, I don't have access to detailed timeline information about gestures, stickers, text overlays, or expressions. The context only includes basic metadata like duration, caption, and engagement statistics.\n\nBased on the limited data available, I can only provide a partial analysis:\n\n{\n  \"engagementTriggers\": [],\n  \"notes\": \"Unable to provide detailed engagement trigger analysis due to missing timeline data. However, the caption suggests this is a product review video about protein cookie dough, using relevant hashtags (#nutsnmore #proteincookiedough) and mentions (@jenna7394 @katelesueur) to drive engagement. The video achieved modest engagement with 1,936 views, 11 likes, and 1 share.\"\n}\n\nTo provide a complete analysis of engagement triggers with timestamps, I would need access to:\n- gestureTimeline\n- stickerTimeline \n- textOverlayTimeline\n- expressionTimeline\n\nThese data fields would allow me to identify and classify specific engagement triggers throughout the video's 78-second duration.",
+      "timestamp": "2025-06-24T11:05:57.327822",
+      "model": "claude-3-5-sonnet-20241022"
+    }
+  },
+  "timelines": {
+    "gestureTimeline": {},
+    "expressionTimeline": {},
+    "objectTimeline": {},
+    "stickerTimeline": {},
+    "textOverlayTimeline": {},
+    "sceneChangeTimeline": {},
+    "cameraDistanceTimeline": {},
+    "speechTimeline": {},
+    "audioRatioTimeline": {},
+    "frames": {
+      "0": {
+        "timestamp": 0,
+        "frame_number": 0,
+        "path": "downloads/analysis/latstrisomeprotein_7197152431958986026/frames/frame_000_0.0s.jpg"
+      },
+      "5": {
+        "timestamp": 5,
+        "frame_number": 150,
+        "path": "downloads/analysis/latstrisomeprotein_7197152431958986026/frames/frame_001_5.0s.jpg"
+      },
+      "10": {
+        "timestamp": 10,
+        "frame_number": 300,
+        "path": "downloads/analysis/latstrisomeprotein_7197152431958986026/frames/frame_002_10.0s.jpg"
+      },
+      "15": {
+        "timestamp": 15,
+        "frame_number": 450,
+        "path": "downloads/analysis/latstrisomeprotein_7197152431958986026/frames/frame_003_15.0s.jpg"
+      },
+      "20": {
+        "timestamp": 20,
+        "frame_number": 600,
+        "path": "downloads/analysis/latstrisomeprotein_7197152431958986026/frames/frame_004_20.0s.jpg"
+      },
+      "25": {
+        "timestamp": 25,
+        "frame_number": 750,
+        "path": "downloads/analysis/latstrisomeprotein_7197152431958986026/frames/frame_005_25.0s.jpg"
+      },
+      "30": {
+        "timestamp": 30,
+        "frame_number": 900,
+        "path": "downloads/analysis/latstrisomeprotein_7197152431958986026/frames/frame_006_30.0s.jpg"
+      },
+      "35": {
+        "timestamp": 35,
+        "frame_number": 1050,
+        "path": "downloads/analysis/latstrisomeprotein_7197152431958986026/frames/frame_007_35.0s.jpg"
+      },
+      "40": {
+        "timestamp": 40,
+        "frame_number": 1200,
+        "path": "downloads/analysis/latstrisomeprotein_7197152431958986026/frames/frame_008_40.0s.jpg"
+      },
+      "45": {
+        "timestamp": 45,
+        "frame_number": 1350,
+        "path": "downloads/analysis/latstrisomeprotein_7197152431958986026/frames/frame_009_45.0s.jpg"
+      },
+      "50": {
+        "timestamp": 50,
+        "frame_number": 1500,
+        "path": "downloads/analysis/latstrisomeprotein_7197152431958986026/frames/frame_010_50.0s.jpg"
+      },
+      "55": {
+        "timestamp": 55,
+        "frame_number": 1650,
+        "path": "downloads/analysis/latstrisomeprotein_7197152431958986026/frames/frame_011_55.0s.jpg"
+      },
+      "60": {
+        "timestamp": 60,
+        "frame_number": 1800,
+        "path": "downloads/analysis/latstrisomeprotein_7197152431958986026/frames/frame_012_60.0s.jpg"
+      },
+      "65": {
+        "timestamp": 65,
+        "frame_number": 1950,
+        "path": "downloads/analysis/latstrisomeprotein_7197152431958986026/frames/frame_013_65.0s.jpg"
+      },
+      "70": {
+        "timestamp": 70,
+        "frame_number": 2100,
+        "path": "downloads/analysis/latstrisomeprotein_7197152431958986026/frames/frame_014_70.0s.jpg"
+      },
+      "75": {
+        "timestamp": 75,
+        "frame_number": 2250,
+        "path": "downloads/analysis/latstrisomeprotein_7197152431958986026/frames/frame_015_75.0s.jpg"
+      },
+      "78.0": {
+        "timestamp": 78.0,
+        "frame_number": 2340,
+        "path": "downloads/analysis/latstrisomeprotein_7197152431958986026/frames/frame_016_78.0s.jpg"
+      }
+    }
+  },
+  "insights": {
+    "primaryObjects": [],
+    "dominantExpressions": [],
+    "creativeDensity": 0.0,
+    "gestureCount": 0,
+    "textOverlayFrequency": 0.0,
+    "humanPresenceRate": 0,
+    "objectDiversity": 0,
+    "sceneComplexity": 0,
+    "engagementIndicators": []
+  },
+  "gvi_data": {
+    "objects": 0,
+    "text": 0,
+    "speech": 0
+  }
+}
