@@ -6,6 +6,7 @@ Run a single Claude prompt for one insight and save to the correct folder
 import os
 import json
 import requests
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -22,6 +23,18 @@ class ClaudeInsightRunner:
         self.api_url = 'https://api.anthropic.com/v1/messages'
         self.model = 'claude-3-5-sonnet-20241022'
         self.base_dir = 'insights'
+        
+        # Per-prompt timeout configuration (in seconds)
+        self.prompt_timeouts = {
+            'creative_density': 60,
+            'emotional_journey': 90,
+            'speech_analysis': 90,
+            'visual_overlay_analysis': 90,
+            'metadata_analysis': 60,
+            'person_framing': 90,
+            'scene_pacing': 60,
+            'default': 120
+        }
         
     def run_claude_prompt(self, video_id, prompt_name, prompt_text, context_data=None):
         """
@@ -51,8 +64,9 @@ class ClaudeInsightRunner:
             f.write(full_prompt)
         print(f"📝 Saved prompt to: {prompt_file}")
         
-        # Get Claude response
-        claude_response = self._call_claude_api(full_prompt)
+        # Get Claude response with appropriate timeout
+        timeout = self.prompt_timeouts.get(prompt_name, self.prompt_timeouts['default'])
+        claude_response = self._call_claude_api(full_prompt, timeout=timeout)
         
         # Save response
         if claude_response['success']:
@@ -115,8 +129,9 @@ class ClaudeInsightRunner:
         full_prompt = f"{context_str}\n\nANALYSIS REQUEST:\n{prompt_text}"
         return full_prompt
     
-    def _call_claude_api(self, prompt):
+    def _call_claude_api(self, prompt, timeout=120):
         """Call Claude API with the prompt"""
+        print(f"⏱️ Using timeout: {timeout}s")
         if not self.api_key or self.api_key == 'your-anthropic-api-key-here':
             return {
                 'success': False,
@@ -139,19 +154,46 @@ class ClaudeInsightRunner:
                 }]
             }
             
-            response = requests.post(self.api_url, headers=headers, json=data)
+            # Log prompt size for debugging
+            prompt_size = len(json.dumps(data))
+            print(f"📏 Prompt size: {prompt_size:,} characters")
             
-            if response.status_code == 200:
-                result = response.json()
-                return {
-                    'success': True,
-                    'response': result['content'][0]['text']
-                }
-            else:
-                return {
-                    'success': False,
-                    'error': f"API error {response.status_code}: {response.text}"
-                }
+            # Try with timeout and retry logic
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    response = requests.post(self.api_url, headers=headers, json=data, timeout=timeout)
+                    
+                    if response.status_code == 200:
+                        result = response.json()
+                        return {
+                            'success': True,
+                            'response': result['content'][0]['text']
+                        }
+                    elif response.status_code == 429:  # Rate limit
+                        if attempt < max_retries - 1:
+                            print(f"⏳ Rate limited, retrying in {2 ** attempt} seconds...")
+                            time.sleep(2 ** attempt)
+                            continue
+                        else:
+                            return {
+                                'success': False,
+                                'error': f"API rate limit exceeded after {max_retries} attempts"
+                            }
+                    else:
+                        return {
+                            'success': False,
+                            'error': f"API error {response.status_code}: {response.text}"
+                        }
+                except requests.exceptions.Timeout:
+                    if attempt < max_retries - 1:
+                        print(f"⏱️ Request timed out, retrying (attempt {attempt + 1}/{max_retries})...")
+                        continue
+                    else:
+                        return {
+                            'success': False,
+                            'error': f"Request timed out after {max_retries} attempts"
+                        }
                 
         except Exception as e:
             return {

@@ -33,19 +33,25 @@ credentials.json
 *-key.json
 wif-credential.json
 
-# Video and Data Files (OUTPUTS ONLY)
-inputs/
-downloads/
-frame_outputs/
+# 🧠 Analysis outputs
+insights/
 unified_analysis/
-comprehensive_analysis_outputs/
+frame_outputs/
+object_detection_outputs/
 creative_analysis_outputs/
 human_analysis_outputs/
-object_detection_outputs/
+enhanced_human_analysis_outputs/
+scene_detection_outputs/
+comprehensive_analysis_outputs/
 audio_analysis_outputs/
-insights/
+speech_transcriptions/
+local_analysis_outputs/
+analysis_results/
 validation_reports/
 test_output/
+inputs/
+downloads/
+*.pdf
 
 # Temporary files
 temp/

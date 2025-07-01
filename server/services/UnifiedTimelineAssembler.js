@@ -33,6 +33,7 @@ class UnifiedTimelineAssembler {
      */
     async assembleUnifiedTimeline(videoId, metadataSummary = {}, videoInfo = {}, username = null) {
         console.log(`🔄 Assembling unified timeline for video: ${videoId}`);
+        let unifiedAnalysis = null;
 
         try {
             // Determine the full video ID with username prefix if needed
@@ -45,20 +46,27 @@ class UnifiedTimelineAssembler {
             const frameCount = this.extractFrameCount(pipelineData);
             const duration = videoInfo.duration || this.calculateDuration(frameCount, videoInfo.fps || 1);
             
-            // Build synchronized timelines
-            const timelines = this.buildSynchronizedTimelines(pipelineData, frameCount, metadataSummary);
-            
             // Extract static metadata
             const staticMetadata = this.extractStaticMetadata(pipelineData, videoInfo, metadataSummary);
             
-            // Build comprehensive metadata summary
+            // Build comprehensive metadata summary BEFORE building timelines
+            // If we have Whisper data, merge it into the metadata summary
+            if (pipelineData.whisper) {
+                metadataSummary = {
+                    ...metadataSummary,
+                    ...pipelineData.whisper
+                };
+            }
             const enhancedMetadataSummary = this.buildMetadataSummary(videoInfo, metadataSummary, staticMetadata);
+            
+            // Build synchronized timelines using the enhanced metadata summary
+            const timelines = this.buildSynchronizedTimelines(pipelineData, frameCount, enhancedMetadataSummary);
             
             // Generate insights
             const insights = this.generateInsights(pipelineData, timelines);
             
             // Assemble final unified object
-            const unifiedAnalysis = {
+            unifiedAnalysis = {
                 video_id: videoId,
                 processed_at: new Date().toISOString(),
                 duration_seconds: duration,
@@ -95,6 +103,19 @@ class UnifiedTimelineAssembler {
             
         } catch (error) {
             console.error(`❌ Failed to assemble unified timeline for ${videoId}:`, error);
+            
+            // Try to save partial results if we have them
+            if (unifiedAnalysis) {
+                try {
+                    unifiedAnalysis.error = error.message;
+                    unifiedAnalysis.partial = true;
+                    await this.saveUnifiedAnalysis(videoId, unifiedAnalysis);
+                    console.log(`⚠️ Saved partial unified timeline for ${videoId}`);
+                } catch (saveError) {
+                    console.error(`❌ Failed to save partial results:`, saveError);
+                }
+            }
+            
             throw error;
         }
     }
@@ -114,10 +135,15 @@ class UnifiedTimelineAssembler {
             audio: await this.loadJsonFile(`audio_analysis_outputs/${fullVideoId}/${fullVideoId}_audio_analysis.json`) ||
                    await this.loadJsonFile(`audio_analysis_outputs/${videoId}/${videoId}_audio_analysis.json`),
             comprehensive: await this.loadJsonFile(`comprehensive_analysis_outputs/${fullVideoId}_comprehensive_analysis.json`) ||
-                          await this.loadJsonFile(`comprehensive_analysis_outputs/${videoId}_comprehensive_analysis.json`)
+                          await this.loadJsonFile(`comprehensive_analysis_outputs/${videoId}_comprehensive_analysis.json`),
+            whisper: await this.loadJsonFile(`speech_transcriptions/${videoId}_whisper.json`) ||
+                     await this.loadJsonFile(`speech_transcriptions/${fullVideoId}_whisper.json`),
+            // Add local scene detection output
+            scenes: await this.loadJsonFile(`scene_detection_outputs/${fullVideoId}/${fullVideoId}_scenes.json`) ||
+                    await this.loadJsonFile(`scene_detection_outputs/${videoId}/${videoId}_scenes.json`)
         };
         
-        console.log(`📊 Loaded pipeline outputs - YOLO: ${!!outputs.yolo}, MediaPipe: ${!!outputs.mediapipe}, OCR: ${!!outputs.ocr}`);
+        console.log(`📊 Loaded pipeline outputs - YOLO: ${!!outputs.yolo}, MediaPipe: ${!!outputs.mediapipe}, OCR: ${!!outputs.ocr}, Scene: ${!!outputs.scenes}, Whisper: ${!!outputs.whisper}`);
         
         return outputs;
     }
@@ -169,13 +195,13 @@ class UnifiedTimelineAssembler {
      */
     buildSynchronizedTimelines(pipelineData, frameCount, metadataSummary) {
         const timelines = {
-            gestureTimeline: this.buildGestureTimeline(pipelineData.mediapipe, frameCount),
-            expressionTimeline: this.buildExpressionTimeline(pipelineData.mediapipe, frameCount),
-            objectTimeline: this.buildObjectTimeline(pipelineData.yolo, frameCount),
-            stickerTimeline: this.buildStickerTimeline(pipelineData.ocr, frameCount),
-            textOverlayTimeline: this.buildTextOverlayTimeline(pipelineData.ocr, frameCount),
+            gestureTimeline: this.buildGestureTimeline(pipelineData.mediapipe, frameCount, metadataSummary),
+            expressionTimeline: this.buildExpressionTimeline(pipelineData.mediapipe, frameCount, metadataSummary),
+            objectTimeline: this.buildObjectTimeline(pipelineData.yolo, frameCount, metadataSummary),
+            stickerTimeline: this.buildStickerTimeline(pipelineData.ocr, frameCount, metadataSummary),
+            textOverlayTimeline: this.buildTextOverlayTimeline(pipelineData.ocr, frameCount, metadataSummary),
             sceneChangeTimeline: this.buildSceneChangeTimeline(pipelineData, frameCount, metadataSummary),
-            cameraDistanceTimeline: this.buildCameraDistanceTimeline(pipelineData.mediapipe, frameCount),
+            cameraDistanceTimeline: this.buildCameraDistanceTimeline(pipelineData.mediapipe, frameCount, metadataSummary),
             speechTimeline: this.buildSpeechTimeline(pipelineData.audio, frameCount, metadataSummary),
             audioRatioTimeline: this.buildAudioRatioTimeline(pipelineData.audio, frameCount)
         };
@@ -186,35 +212,50 @@ class UnifiedTimelineAssembler {
     /**
      * Build gesture timeline from MediaPipe data
      */
-    buildGestureTimeline(mediapipeData, frameCount) {
+    buildGestureTimeline(mediapipeData, frameCount, metadataSummary) {
         const timeline = {};
         
         // Check both possible locations for gestures
         const gestures = mediapipeData?.insights?.timeline?.gestures || mediapipeData?.timeline?.gestures;
         
-        if (!gestures || !Array.isArray(gestures)) {
-            return timeline;
+        if (gestures && Array.isArray(gestures)) {
+            // Group gestures by frame
+            const gesturesByFrame = {};
+            gestures.forEach(gesture => {
+                const frame = gesture.frame;
+                if (!gesturesByFrame[frame]) {
+                    gesturesByFrame[frame] = [];
+                }
+                gesturesByFrame[frame].push(gesture.gesture);
+            });
+            
+            // Build timeline
+            Object.entries(gesturesByFrame).forEach(([frame, frameGestures]) => {
+                const timestamp = this.frameToTimestamp(parseInt(frame));
+                timeline[timestamp] = {
+                    frame: parseInt(frame),
+                    gestures: frameGestures,
+                    dominant: frameGestures[0] || 'none'
+                };
+            });
         }
-        
-        // Group gestures by frame
-        const gesturesByFrame = {};
-        gestures.forEach(gesture => {
-            const frame = gesture.frame;
-            if (!gesturesByFrame[frame]) {
-                gesturesByFrame[frame] = [];
-            }
-            gesturesByFrame[frame].push(gesture.gesture);
-        });
-        
-        // Build timeline
-        Object.entries(gesturesByFrame).forEach(([frame, frameGestures]) => {
-            const timestamp = this.frameToTimestamp(parseInt(frame));
-            timeline[timestamp] = {
-                frame: parseInt(frame),
-                gestures: frameGestures,
-                dominant: frameGestures[0] || 'none'
-            };
-        });
+        // If no MediaPipe data, check enhanced human analysis
+        else if (metadataSummary?.enhancedHumanAnalysis?.primary_actions) {
+            // Convert primary actions to gesture timeline
+            const actions = metadataSummary.enhancedHumanAnalysis.primary_actions;
+            Object.entries(actions).forEach(([action, count]) => {
+                if (count > 0 && action !== 'none') {
+                    // Distribute actions across the video duration
+                    // This is a simplified approach - in reality, we'd need frame-level data
+                    const timestamp = this.frameToTimestamp(0);
+                    timeline[timestamp] = {
+                        frame: 0,
+                        gestures: [action],
+                        dominant: action
+                    };
+                }
+            });
+        }
         
         return timeline;
     }
@@ -248,22 +289,49 @@ class UnifiedTimelineAssembler {
     /**
      * Build object timeline from YOLO data
      */
-    buildObjectTimeline(yoloData, frameCount) {
+    buildObjectTimeline(yoloData, frameCount, metadataSummary) {
         const timeline = {};
         
-        if (!yoloData?.frame_summaries) {
-            return timeline;
+        // First try YOLO pipeline data
+        if (yoloData?.frame_summaries) {
+            yoloData.frame_summaries.forEach(frameSummary => {
+                const frame = frameSummary.frame_number;
+                const timestamp = this.frameToTimestamp(frame);
+                timeline[timestamp] = {
+                    frame: frame,
+                    objects: frameSummary.object_counts || {},
+                    total_objects: frameSummary.total_objects || 0
+                };
+            });
         }
-        
-        yoloData.frame_summaries.forEach(frameSummary => {
-            const frame = frameSummary.frame_number;
-            const timestamp = this.frameToTimestamp(frame);
-            timeline[timestamp] = {
-                frame: frame,
-                objects: frameSummary.object_counts || {},
-                total_objects: frameSummary.total_objects || 0
-            };
-        });
+        // If no YOLO data, try metadata summary
+        else if (metadataSummary?.objectAnnotations) {
+            // Group objects by frame
+            const objectsByFrame = {};
+            
+            metadataSummary.objectAnnotations.forEach(annotation => {
+                if (annotation.frames && annotation.frames.length > 0) {
+                    annotation.frames.forEach(frameData => {
+                        const frame = frameData.frame || frameData.timeOffset || 0;
+                        if (!objectsByFrame[frame]) {
+                            objectsByFrame[frame] = {};
+                        }
+                        const objName = annotation.description || annotation.name || 'unknown';
+                        objectsByFrame[frame][objName] = (objectsByFrame[frame][objName] || 0) + 1;
+                    });
+                }
+            });
+            
+            // Build timeline from grouped objects
+            Object.entries(objectsByFrame).forEach(([frame, objects]) => {
+                const timestamp = this.frameToTimestamp(parseInt(frame));
+                timeline[timestamp] = {
+                    frame: parseInt(frame),
+                    objects: objects,
+                    total_objects: Object.values(objects).reduce((sum, count) => sum + count, 0)
+                };
+            });
+        }
         
         return timeline;
     }
@@ -285,7 +353,7 @@ class UnifiedTimelineAssembler {
                 const timestamp = this.frameToTimestamp(frame);
                 
                 const stickers = frameDetail.creative_elements?.filter(el => 
-                    el.type === 'sticker' || el.category === 'sticker'
+                    el.type === 'sticker' || el.category === 'sticker' || el.element === 'sticker'
                 ) || [];
                 
                 if (stickers.length > 0) {
@@ -306,34 +374,58 @@ class UnifiedTimelineAssembler {
     /**
      * Build text overlay timeline from OCR data
      */
-    buildTextOverlayTimeline(ocrData, frameCount) {
+    buildTextOverlayTimeline(ocrData, frameCount, metadataSummary) {
         const timeline = {};
         
-        if (!ocrData?.frame_details) {
-            return timeline;
-        }
-        
-        ocrData.frame_details.forEach(frameDetail => {
-            const frameMatch = frameDetail.frame.match(/frame_(\d+)/);
-            if (frameMatch) {
-                const frame = parseInt(frameMatch[1]);
-                const timestamp = this.frameToTimestamp(frame);
-                
-                const texts = frameDetail.text_elements || [];
-                
-                if (texts.length > 0) {
-                    timeline[timestamp] = {
-                        frame: frame,
-                        texts: texts.map(t => ({
-                            text: t.text,
-                            category: t.category || 'overlay_text',
-                            confidence: t.confidence || 0.0,
-                            bbox: t.bbox || null
-                        }))
-                    };
+        // First try OCR pipeline data
+        if (ocrData?.frame_details) {
+            ocrData.frame_details.forEach(frameDetail => {
+                const frameMatch = frameDetail.frame.match(/frame_(\d+)/);
+                if (frameMatch) {
+                    const frame = parseInt(frameMatch[1]);
+                    const timestamp = this.frameToTimestamp(frame);
+                    
+                    const texts = frameDetail.text_elements || [];
+                    
+                    if (texts.length > 0) {
+                        timeline[timestamp] = {
+                            frame: frame,
+                            texts: texts.map(t => ({
+                                text: t.text,
+                                category: t.category || 'overlay_text',
+                                confidence: t.confidence || 0.0,
+                                bbox: t.bbox || null
+                            }))
+                        };
+                    }
                 }
-            }
-        });
+            });
+        }
+        // If no OCR data, try metadata summary
+        else if (metadataSummary?.textAnnotations) {
+            metadataSummary.textAnnotations.forEach(annotation => {
+                if (annotation.frames && annotation.frames.length > 0) {
+                    annotation.frames.forEach(frameData => {
+                        const frame = frameData.frame;
+                        const timestamp = this.frameToTimestamp(frame);
+                        
+                        if (!timeline[timestamp]) {
+                            timeline[timestamp] = {
+                                frame: frame,
+                                texts: []
+                            };
+                        }
+                        
+                        timeline[timestamp].texts.push({
+                            text: annotation.text,
+                            category: annotation.category || 'overlay_text',
+                            confidence: frameData.confidence || 0.0,
+                            bbox: annotation.bbox || null
+                        });
+                    });
+                }
+            });
+        }
         
         return timeline;
     }
@@ -344,22 +436,17 @@ class UnifiedTimelineAssembler {
     buildSceneChangeTimeline(pipelineData, frameCount, metadataSummary) {
         const timeline = {};
         
-        // First, check for GVI shot changes
+        // Check for shot changes from LOCAL PySceneDetect (ONLY source)
         if (metadataSummary?.shots && Array.isArray(metadataSummary.shots)) {
+            console.log(`🎬 Using local PySceneDetect data: ${metadataSummary.shots.length} shots detected`);
+            
             metadataSummary.shots.forEach((shot, index) => {
-                // Convert shot start time to frame number
+                // Parse time from PySceneDetect format (already formatted by LocalVideoAnalyzer)
                 const startTime = this.parseTimeOffset(shot.startTime);
                 const endTime = this.parseTimeOffset(shot.endTime);
                 
-                // Calculate video duration from last shot if not provided
-                const videoDuration = metadataSummary.duration || 
-                    (metadataSummary.shots[metadataSummary.shots.length - 1] ? 
-                     this.parseTimeOffset(metadataSummary.shots[metadataSummary.shots.length - 1].endTime) : 
-                     startTime);
-                
-                // Calculate frame number (assuming 1 fps for frame count)
-                const fps = frameCount / videoDuration;
-                const startFrame = Math.max(1, Math.round(startTime * fps));
+                // Use frame data if available (PySceneDetect provides this)
+                const startFrame = shot.startFrame || Math.max(1, Math.round(startTime));
                 const timestamp = this.frameToTimestamp(startFrame);
                 
                 // Add shot change at the start of each shot (except the first)
@@ -370,27 +457,63 @@ class UnifiedTimelineAssembler {
                         description: `Shot ${index + 1} begins`,
                         startTime: startTime,
                         endTime: endTime,
-                        shotDuration: endTime - startTime
+                        shotDuration: endTime - startTime,
+                        source: 'PySceneDetect'
                     };
                 }
             });
         }
-        
-        // Also look for scene changes in comprehensive data
-        if (pipelineData.comprehensive?.timeline?.events) {
-            pipelineData.comprehensive.timeline.events
-                .filter(event => event.type === 'scene_change' || event.type === 'shot_change')
-                .forEach(event => {
-                    const frame = event.frame || 1;
-                    const timestamp = this.frameToTimestamp(frame);
+        // Check for PySceneDetect data in _raw
+        else if (metadataSummary?._raw?.scenes?.shots && Array.isArray(metadataSummary._raw.scenes.shots)) {
+            console.log(`🎬 Using PySceneDetect from _raw data: ${metadataSummary._raw.scenes.shots.length} shots`);
+            
+            metadataSummary._raw.scenes.shots.forEach((shot, index) => {
+                const startTime = shot.start_time;
+                const endTime = shot.end_time;
+                const startFrame = shot.start_frame || Math.max(1, Math.round(startTime));
+                const timestamp = this.frameToTimestamp(startFrame);
+                
+                if (index > 0) {
                     timeline[timestamp] = {
-                        frame: frame,
-                        type: 'scene_change',
-                        description: event.description || 'Scene change detected'
+                        frame: startFrame,
+                        type: 'shot_change',
+                        description: `Shot ${index + 1} begins`,
+                        startTime: startTime,
+                        endTime: endTime,
+                        shotDuration: endTime - startTime,
+                        source: 'PySceneDetect'
                     };
-                });
+                }
+            });
+        }
+        // Try loading from standalone scene detection file
+        else if (pipelineData.scenes?.shots && Array.isArray(pipelineData.scenes.shots)) {
+            console.log(`🎬 Using PySceneDetect from scene detection file: ${pipelineData.scenes.shots.length} shots`);
+            
+            pipelineData.scenes.shots.forEach((shot, index) => {
+                const startTime = shot.start_time;
+                const endTime = shot.end_time;
+                const startFrame = shot.start_frame || Math.max(1, Math.round(startTime));
+                const timestamp = this.frameToTimestamp(startFrame);
+                
+                if (index > 0) {
+                    timeline[timestamp] = {
+                        frame: startFrame,
+                        type: 'shot_change',
+                        description: `Shot ${index + 1} begins`,
+                        startTime: startTime,
+                        endTime: endTime,
+                        shotDuration: endTime - startTime,
+                        source: 'PySceneDetect'
+                    };
+                }
+            });
+        } else {
+            console.log(`⚠️ No PySceneDetect data available. Scene change timeline will be empty.`);
+            console.log(`   Please ensure PySceneDetect is running during local video analysis.`);
         }
         
+        console.log(`📊 Scene change timeline built with ${Object.keys(timeline).length} transitions (PySceneDetect only)`);
         return timeline;
     }
 
@@ -422,7 +545,7 @@ class UnifiedTimelineAssembler {
     }
 
     /**
-     * Parse time offset from GVI format (e.g., "1.2s" or {seconds: 1, nanos: 200000000})
+     * Parse time offset from various formats (e.g., "1.2s" or {seconds: 1, nanos: 200000000})
      */
     parseTimeOffset(timeOffset) {
         if (!timeOffset) return 0;
@@ -451,9 +574,13 @@ class UnifiedTimelineAssembler {
         // Log what data we receive
         console.log(`🎤 Building speech timeline - audioData: ${!!audioData}, metadataSummary: ${!!metadataSummary}`);
         
-        // First try to get speech from GVI transcriptions
+        // First try to get speech from transcriptions (either local analysis or Whisper format)
         if (metadataSummary?.speechTranscriptions && metadataSummary.speechTranscriptions.length > 0) {
             console.log(`🎙️ Building speech timeline from ${metadataSummary.speechTranscriptions.length} transcriptions`);
+            
+            // Calculate duration - use metadataSummary.duration or estimate from video
+            const videoDuration = metadataSummary.duration || frameCount; // Assuming 1 fps if no duration
+            
             metadataSummary.speechTranscriptions.forEach((transcription, idx) => {
                 if (transcription.alternatives && transcription.alternatives.length > 0) {
                     const alternative = transcription.alternatives[0];
@@ -462,7 +589,7 @@ class UnifiedTimelineAssembler {
                     if (alternative.words && alternative.words.length > 0) {
                         alternative.words.forEach(word => {
                             const startTime = this.parseTimeOffset(word.startTime);
-                            const startFrame = Math.floor(startTime * (frameCount / (metadataSummary.duration || startTime)));
+                            const startFrame = Math.floor(startTime * (frameCount / videoDuration));
                             const timestamp = this.frameToTimestamp(startFrame);
                             
                             if (!timeline[timestamp]) {
@@ -571,7 +698,7 @@ class UnifiedTimelineAssembler {
     /**
      * Build comprehensive metadata summary
      */
-    buildMetadataSummary(videoInfo, gviMetadata, staticMetadata) {
+    buildMetadataSummary(videoInfo, localAnalysisMetadata, staticMetadata) {
         // Extract topic/theme from caption
         const caption = staticMetadata.captionText || '';
         let captionTopic = 'general content';
@@ -621,20 +748,71 @@ class UnifiedTimelineAssembler {
             viewCount: staticMetadata.stats?.views || 0,
             
             // Audio/Speech data
-            hasAudio: (gviMetadata?.speechTranscriptions?.length > 0) || (gviMetadata?.transcript?.length > 0),
-            hasSpeech: (gviMetadata?.speechTranscriptions?.length > 0 && 
-                       gviMetadata.speechTranscriptions.some(t => 
-                           t.alternatives?.some(a => a.transcript || (a.words && a.words.length > 0))
-                       )),
-            transcript: gviMetadata?.transcript || '',
-            wordCount: gviMetadata?.wordCount || 0,
-            speechDuration: this.calculateSpeechDuration(gviMetadata?.speechTranscriptions),
+            // Check both direct speechTranscriptions and processed.speechTranscriptions for compatibility
+            hasAudio: (localAnalysisMetadata?.speechTranscriptions?.length > 0) || 
+                     (localAnalysisMetadata?.processed?.speechTranscriptions?.length > 0) || 
+                     (localAnalysisMetadata?.transcript?.length > 0),
+            hasSpeech: ((localAnalysisMetadata?.speechTranscriptions?.length > 0 && 
+                        localAnalysisMetadata.speechTranscriptions.some(t => 
+                            t.alternatives?.some(a => a.transcript || (a.words && a.words.length > 0))
+                        )) ||
+                       (localAnalysisMetadata?.processed?.speechTranscriptions?.length > 0 && 
+                        localAnalysisMetadata.processed.speechTranscriptions.some(t => 
+                            t.alternatives?.some(a => a.transcript || (a.words && a.words.length > 0))
+                        ))),
+            transcript: localAnalysisMetadata?.transcript || '',
+            wordCount: localAnalysisMetadata?.wordCount || 0,
+            speechDuration: this.calculateSpeechDuration(localAnalysisMetadata?.speechTranscriptions || localAnalysisMetadata?.processed?.speechTranscriptions),
             
-            // GVI-specific metadata (if available)
-            ...(gviMetadata || {})
+            // Include speechTranscriptions for timeline building
+            // Check both direct and nested locations
+            speechTranscriptions: localAnalysisMetadata?.speechTranscriptions || localAnalysisMetadata?.processed?.speechTranscriptions || [],
+            
+            // Enhanced Human Analysis data
+            enhancedHumanAnalysis: localAnalysisMetadata?.enhancedHumanAnalysis || {},
+            
+            // Person framing metrics
+            faceScreenTimeRatio: localAnalysisMetadata?.enhancedHumanAnalysis?.face_screen_time_ratio || 0,
+            personScreenTimeRatio: localAnalysisMetadata?.enhancedHumanAnalysis?.person_screen_time_ratio || 0,
+            eyeContactRatio: localAnalysisMetadata?.enhancedHumanAnalysis?.gaze_patterns?.eye_contact_ratio || 0,
+            primaryActions: localAnalysisMetadata?.enhancedHumanAnalysis?.primary_actions || {},
+            
+            // GVI-specific metadata (if available) - exclude _raw data
+            ...(this.filterRawData(localAnalysisMetadata) || {})
         };
         
         return summary;
+    }
+
+    /**
+     * Filter out _raw data and other large debug data
+     */
+    filterRawData(obj) {
+        if (!obj || typeof obj !== 'object') return obj;
+        
+        const filtered = {};
+        for (const key in obj) {
+            // Skip _raw data and other debug fields
+            if (key === '_raw' || key.startsWith('_debug') || key === 'raw_data') {
+                continue;
+            }
+            
+            // Recursively filter nested objects
+            if (typeof obj[key] === 'object' && obj[key] !== null) {
+                if (Array.isArray(obj[key])) {
+                    // For arrays, check if they contain raw data
+                    if (key === 'frame_analyses' || key.endsWith('_frames') || key.endsWith('_raw')) {
+                        continue;
+                    }
+                    filtered[key] = obj[key];
+                } else {
+                    filtered[key] = this.filterRawData(obj[key]);
+                }
+            } else {
+                filtered[key] = obj[key];
+            }
+        }
+        return filtered;
     }
 
     /**
@@ -714,7 +892,7 @@ class UnifiedTimelineAssembler {
             textOverlayFrequency: this.calculateTextFrequency(timelines.textOverlayTimeline),
             
             // Human presence rate
-            humanPresenceRate: pipelineData.mediapipe?.insights?.human_presence || 0,
+            humanPresenceRate: pipelineData.mediapipe?.human_presence || pipelineData.mediapipe?.insights?.human_presence || 0,
             
             // Object diversity
             objectDiversity: this.calculateObjectDiversity(pipelineData.yolo),
