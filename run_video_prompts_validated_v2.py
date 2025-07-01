@@ -1597,7 +1597,7 @@ def compute_speech_analysis_metrics(speech_timeline, transcript, speech_segments
     
     # 2. Speech Rhythm & Pacing
     wpm_by_segment = {}
-    window_size = 5  # 5-second windows
+    window_size = 1  # 1-second windows for better granularity
     
     for i in range(0, int(video_duration), window_size):
         window_start = i
