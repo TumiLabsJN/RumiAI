@@ -546,7 +546,7 @@ def compute_creative_density_analysis(timelines, duration):
 
 
 def compute_emotional_metrics(expression_timeline, speech_timeline, gesture_timeline, duration, 
-                            sample_interval=5, intensity_threshold=0.6):
+                            sample_interval=1, intensity_threshold=0.6):
     """Compute emotional metrics for ML-ready analysis
     
     Args:
@@ -554,7 +554,7 @@ def compute_emotional_metrics(expression_timeline, speech_timeline, gesture_time
         speech_timeline: Timeline of speech segments
         gesture_timeline: Timeline of gestures
         duration: Video duration in seconds
-        sample_interval: Seconds between emotion samples (default: 5)
+        sample_interval: Seconds between emotion samples (default: 1)
         intensity_threshold: Threshold for emotional peaks (default: 0.6)
     """
     # Define standardized emotion labels and valence mapping
