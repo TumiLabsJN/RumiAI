@@ -99,11 +99,13 @@ def compute_visual_overlay_metrics(text_overlay_timeline, sticker_timeline, gest
         interval = sorted_appearances[i][0] - sorted_appearances[i-1][0]
         appearance_intervals.append(interval)
     
-    # Burst windows and clutter timeline
+    # Burst windows and clutter timeline (1-second granularity for better accuracy)
     burst_windows = []
     clutter_timeline = {}
-    for start in range(0, seconds, 5):
-        end = min(start + 5, seconds)
+    burst_threshold = 2  # Lowered from 3 since we're using 1s windows instead of 5s
+    
+    for start in range(0, seconds):
+        end = start + 1
         window_key = f"{start}-{end}s"
         
         text_count = sum(1 for t in text_appearances if start <= t[0] < end)
@@ -117,7 +119,7 @@ def compute_visual_overlay_metrics(text_overlay_timeline, sticker_timeline, gest
             'total': total_count
         }
         
-        if total_count >= 3:
+        if total_count >= burst_threshold:
             burst_windows.append(window_key)
     
     # Calculate breathing room ratio
