@@ -331,14 +331,14 @@ def compute_creative_density_analysis(timelines, duration):
     # Initialize density tracking
     seconds = int(duration) + 1
     density_per_second = [0] * seconds
-    element_types_per_second = [{'text': 0, 'sticker': 0, 'gesture': 0, 'expression': 0, 'object': 0} for _ in range(seconds)]
+    element_types_per_second = [{'text': 0, 'sticker': 0, 'effect': 0, 'transition': 0, 'object': 0} for _ in range(seconds)]
     
     # Calculate density for each second
     for timeline_type, timeline_data in [
         ('text', timelines.get('textOverlayTimeline', {})),
         ('sticker', timelines.get('stickerTimeline', {})),
-        ('gesture', timelines.get('gestureTimeline', {})),
-        ('expression', timelines.get('expressionTimeline', {})),
+        ('effect', timelines.get('effectTimeline', {})),
+        ('transition', timelines.get('transitionTimeline', {})),
         ('object', timelines.get('objectTimeline', {}))
     ]:
         for timestamp, data in timeline_data.items():
@@ -355,12 +355,14 @@ def compute_creative_density_analysis(timelines, duration):
                         count = len(data.get('texts', [])) if 'texts' in data else 1
                     elif timeline_type == 'sticker':
                         count = len(data.get('stickers', [])) if 'stickers' in data else 1
-                    elif timeline_type == 'gesture':
-                        count = len(data.get('gestures', [])) if 'gestures' in data else 1
+                    elif timeline_type == 'effect':
+                        count = len(data.get('effects', [])) if 'effects' in data else 1
+                    elif timeline_type == 'transition':
+                        count = 1  # Each transition counts as 1
                     elif timeline_type == 'object':
                         count = data.get('total_objects', 1)
-                    else:  # expression
-                        count = 1 if data.get('expression') else 0
+                    else:
+                        count = 0
                     
                     density_per_second[second] += count
                     element_types_per_second[second][timeline_type] += count
@@ -462,8 +464,8 @@ def compute_creative_density_analysis(timelines, duration):
     element_distribution = {
         'text': sum(e['text'] for e in element_types_per_second),
         'sticker': sum(e['sticker'] for e in element_types_per_second),
-        'gesture': sum(e['gesture'] for e in element_types_per_second),
-        'expression': sum(e['expression'] for e in element_types_per_second),
+        'effect': sum(e['effect'] for e in element_types_per_second),
+        'transition': sum(e['transition'] for e in element_types_per_second),
         'object': sum(e['object'] for e in element_types_per_second)
     }
     
@@ -502,8 +504,8 @@ def compute_creative_density_analysis(timelines, duration):
         creative_ml_tags.append('hook_heavy')
     if element_distribution['text'] > total_elements * 0.4:
         creative_ml_tags.append('text_driven')
-    if element_distribution['gesture'] > total_elements * 0.3:
-        creative_ml_tags.append('gesture_rich')
+    if element_distribution['effect'] > total_elements * 0.3:
+        creative_ml_tags.append('effect_rich')
     if len(significant_peaks) >= 3:
         creative_ml_tags.append('multi_peak')
     if empty_seconds > seconds * 0.3:
@@ -815,7 +817,7 @@ def compute_emotional_metrics(expression_timeline, speech_timeline, gesture_time
 
 
 def compute_person_framing_metrics(expression_timeline, object_timeline, camera_distance_timeline,
-                                  person_timeline, enhanced_human_data, duration):
+                                  person_timeline, scene_change_timeline, enhanced_human_data, duration):
     """Compute person framing metrics for ML-ready analysis
     
     Args:
@@ -885,11 +887,39 @@ def compute_person_framing_metrics(expression_timeline, object_timeline, camera_
         avg_camera_distance = dominant_shot_type
     else:
         shot_type_distribution = {'close': 0, 'medium': 0, 'far': 0}
-        dominant_shot_type = 'medium'
-        avg_camera_distance = 'medium'
+        dominant_shot_type = 'unknown'
+        avg_camera_distance = 'unknown'
+        
+        # Try to infer intro shot type from face presence in first 3 seconds
+        if intro_shot_type == 'unknown':
+            face_in_intro = False
+            for i in range(min(3, seconds)):
+                timestamp = f"{i}-{i+1}s"
+                if timestamp in expression_timeline and expression_timeline[timestamp].get('expression'):
+                    face_in_intro = True
+                    break
+            intro_shot_type = 'face_focused' if face_in_intro else 'no_person'
     
     # Calculate framing volatility
     framing_volatility = distance_changes / total_frames if total_frames > 1 else 0
+    
+    # Detect shot transitions from scene changes
+    shot_transitions = []
+    if scene_change_timeline:
+        for timestamp, scene_data in scene_change_timeline.items():
+            if scene_data.get('type') == 'shot_change':
+                transition_time = scene_data.get('startTime', 0)
+                shot_transitions.append({
+                    'timestamp': timestamp,
+                    'time': round(transition_time, 2),
+                    'shot_number': int(scene_data.get('description', '').split()[-2]) if 'Shot' in scene_data.get('description', '') else 0,
+                    'type': 'cut'  # PySceneDetect typically detects cuts
+                })
+    
+    # If we have scene changes but no camera distance changes, update volatility
+    if not distance_changes and len(shot_transitions) > 0:
+        # Use scene changes as a proxy for framing changes
+        framing_volatility = len(shot_transitions) / duration if duration > 0 else 0
     
     # Track subject absence
     absence_segments = []
@@ -1034,7 +1064,9 @@ def compute_person_framing_metrics(expression_timeline, object_timeline, camera_
         'subject_absence_count': subject_absence_count,
         'person_framing_pattern_tags': person_framing_pattern_tags,
         'shot_type_distribution': shot_type_distribution,
-        'longest_absence_duration': longest_absence_duration
+        'longest_absence_duration': longest_absence_duration,
+        'shot_transitions': shot_transitions,
+        'absence_segments': absence_segments
     }
     
     # Add optional enhanced metrics
@@ -2212,6 +2244,7 @@ def extract_real_ml_data(unified_data, prompt_name, video_id=None):
             object_timeline=timelines.get('objectTimeline', {}),
             camera_distance_timeline=timelines.get('cameraDistanceTimeline', {}),
             person_timeline=timelines.get('personTimeline', {}),
+            scene_change_timeline=timelines.get('sceneChangeTimeline', {}),
             enhanced_human_data=enhanced_human_data,
             duration=unified_data.get('duration_seconds', 30)
         )
@@ -2282,17 +2315,72 @@ def extract_real_ml_data(unified_data, prompt_name, video_id=None):
     elif prompt_name == 'metadata_analysis':
         # For metadata analysis, only include static metadata (no timelines)
         static_metadata = unified_data.get('static_metadata', {})
-        context_data['static_metadata'] = {
-            'captionText': static_metadata.get('captionText', ''),
-            'hashtags': static_metadata.get('hashtags', []),
-            'stats': static_metadata.get('stats', {}),
-            'createTime': static_metadata.get('createTime', ''),
-            'duration': static_metadata.get('duration', 0),
-            'musicMeta': static_metadata.get('musicMeta', {})
-        }
-        # Also include collectCount if available
-        if 'collectCount' in static_metadata:
-            context_data['static_metadata']['collectCount'] = static_metadata.get('collectCount', 0)
+        caption_text = static_metadata.get('captionText', '')
+        
+        # Precompute metadata metrics
+        context_data['caption_text'] = caption_text
+        context_data['caption_length'] = len(caption_text)
+        context_data['word_count'] = len(caption_text.split())
+        context_data['hashtag_list'] = static_metadata.get('hashtags', [])
+        context_data['hashtag_count'] = len(static_metadata.get('hashtags', []))
+        
+        # Count emojis (simplified - counts common emoji ranges)
+        import re
+        emoji_pattern = re.compile("["
+            u"\U0001F600-\U0001F64F"  # emoticons
+            u"\U0001F300-\U0001F5FF"  # symbols & pictographs
+            u"\U0001F680-\U0001F6FF"  # transport & map symbols
+            u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
+            u"\U00002702-\U000027B0"
+            u"\U000024C2-\U0001F251"
+            u"\U0001F900-\U0001F9FF"  # Supplemental Symbols and Pictographs
+            u"\U00002600-\U000027BF"  # Miscellaneous Symbols
+            u"\U0001F300-\U0001F5FF"  # Miscellaneous Symbols And Pictographs
+            "]+", flags=re.UNICODE)
+        
+        emojis = emoji_pattern.findall(caption_text)
+        emoji_list = []
+        for emoji_str in emojis:
+            emoji_list.extend(list(emoji_str))
+        
+        context_data['emoji_count'] = len(emoji_list)
+        context_data['emoji_list'] = list(set(emoji_list))  # Unique emojis
+        
+        # Count mentions
+        mentions = re.findall(r'@\w+', caption_text)
+        context_data['mention_count'] = len(mentions)
+        context_data['mention_list'] = mentions
+        
+        # Check for links
+        context_data['link_present'] = bool(re.search(r'https?://\S+|www\.\S+', caption_text))
+        
+        # Video and engagement data
+        context_data['video_duration'] = static_metadata.get('duration', 0)
+        context_data['publish_time'] = static_metadata.get('createTime', '')
+        
+        # Stats
+        stats = static_metadata.get('stats', {})
+        context_data['view_count'] = stats.get('views', 0)
+        context_data['like_count'] = stats.get('likes', 0)
+        context_data['comment_count'] = stats.get('comments', 0)
+        context_data['share_count'] = stats.get('shares', 0)
+        context_data['save_count'] = stats.get('saves', 0)
+        context_data['engagement_rate'] = stats.get('engagementRate', 0)
+        
+        # Creator data
+        author = static_metadata.get('author', {})
+        context_data['creator_username'] = author.get('username', '')
+        context_data['creator_follower_count'] = author.get('followerCount', 0)
+        
+        # Music data
+        music = static_metadata.get('music', {})
+        context_data['music_id'] = music.get('id', '')
+        context_data['music_name'] = music.get('musicName', '')
+        context_data['music_author'] = music.get('musicAuthor', '')
+        context_data['music_original'] = music.get('musicOriginal', False)
+        
+        # Keep raw data for validation
+        context_data['static_metadata'] = static_metadata
         
     else:
         # For other prompts, include relevant timeline data

@@ -443,6 +443,7 @@ class TikTokService {
                 likes: parseInt(video.diggCount || video.likeCount || video.likes) || 0,
                 comments: parseInt(video.commentCount || video.comments) || 0,
                 shares: parseInt(video.shareCount || video.shares) || 0,
+                saves: parseInt(video.collectCount || video.saves || 0),
                 engagementRate: parseFloat(video.engagementRate) || 0,
                 duration: video.videoMeta?.duration || video.duration || 0,
                 createTime: video.createTimeISO || video.createTime || video.publishedAt,

@@ -688,8 +688,10 @@ class UnifiedTimelineAssembler {
                 likes: videoInfo.likes || 0,
                 comments: videoInfo.comments || 0,
                 shares: videoInfo.shares || 0,
+                saves: videoInfo.saves || 0,
                 engagementRate: videoInfo.engagementRate || 0
-            }
+            },
+            music: videoInfo.music || {}
         };
         
         return metadata;

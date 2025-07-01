@@ -1,0 +1,177 @@
+Goal: Extract emotional journey features as structured data for ML analysis
+
+Input File: unified_analysis/[video_id].json
+
+You will receive precomputed emotional metrics:
+- `emotion_variability`: Standard deviation of emotional valence (0-1 scale)
+- `emotion_sequence`: List of dominant emotions per time window
+- `emotion_valence`: Numerical intensity values (-1 to 1) for each emotion
+- `emotion_timestamps`: Time windows for emotion sequence
+- `emotional_peaks`: Top 5 moments by emotional intensity, sorted by magnitude
+- `dominant_emotion`: Most frequent emotion overall
+- `emotional_trajectory`: Overall arc pattern (ascending/descending/u-shaped/flat)
+- `emotion_gesture_alignment`: Real alignment score (0-1) between emotions and gestures
+- `emotion_change_rate`: Volatility measure - how rapidly emotions shift
+- `emotional_consistency`: Inverse of volatility (1 - change_rate)
+- `has_high_emotion_peak`: Boolean flag for videos with intense emotions (|valence| > 0.8)
+- `peak_intensity_count`: Number of high-intensity emotional moments
+- `emotion_diversity`: Ratio of unique emotions used (0-1 scale)
+- `positive_ratio`: Percentage of positive emotional moments
+- `negative_ratio`: Percentage of negative emotional moments
+- `emotion_valence_curve`: Time series data with timestamp, valence, and emotion
+- `emotion_transition_matrix`: Markov-style transitions
+- `valence_momentum`: Contains average_momentum, max_positive_momentum, max_negative_momentum, momentum_changes
+- `peak_rhythm`: Contains peak_spacing_mean, peak_spacing_variance, regularity_score, peak_count
+
+Raw Timeline Data (for validation):
+- `expression_timeline`: Facial expressions with timestamps
+- `gesture_timeline`: Hand gestures and movements
+- `speech_timeline`: Speech segments with timing
+- `camera_distance_timeline`: Shot types over time
+- `transcript`: Full speech transcript
+- `caption`: Video caption text
+
+Output the following 6 modular blocks:
+
+1. emotionalCoreMetrics
+{
+  "dominantEmotion": string,
+  "emotionVariability": float,
+  "emotionChangeRate": float,
+  "emotionalConsistency": float,
+  "emotionDiversity": float,
+  "positiveRatio": float,
+  "negativeRatio": float,
+  "neutralRatio": float,
+  "hasHighIntensityPeak": boolean,
+  "peakIntensityCount": int,
+  "emotionGestureAlignment": float,
+  "confidence": float
+}
+
+2. emotionalDynamics
+{
+  "emotionSequence": ["joy", "neutral", "surprise"],
+  "emotionTimestamps": ["0-5s", "5-10s", "10-15s"],
+  "emotionValence": [0.8, 0.0, 0.9],
+  "valenceCurve": [
+    {"timestamp": "0-5s", "valence": 0.8, "emotion": "joy"},
+    {"timestamp": "5-10s", "valence": 0.0, "emotion": "neutral"}
+  ],
+  "trajectory": "ascending" | "descending" | "u-shaped" | "flat",
+  "valenceMomentum": {
+    "averageMomentum": float,
+    "maxPositiveMomentum": float,
+    "maxNegativeMomentum": float
+  },
+  "confidence": float
+}
+
+3. emotionalInteractions
+{
+  "emotionGestureSync": [
+    {
+      "timestamp": "0-5s",
+      "emotion": "joy",
+      "gesturePresent": true,
+      "alignmentScore": 0.85
+    }
+  ],
+  "emotionSpeechAlignment": {
+    "overallAlignment": float,
+    "conflictsDetected": boolean,
+    "misalignmentCount": int,
+    "alignmentEvents": [
+      {
+        "timestamp": "10-15s",
+        "visualEmotion": "surprise",
+        "speechSentiment": "positive",
+        "congruent": true
+      }
+    ]
+  },
+  "crossModalConsistency": float,
+  "confidence": float
+}
+
+4. emotionalKeyEvents
+{
+  "emotionalPeaks": [
+    {
+      "timestamp": "10-15s",
+      "emotion": "surprise",
+      "intensity": 0.9,
+      "rank": 1
+    }
+  ],
+  "emotionTransitions": [
+    {
+      "timestamp": "5s",
+      "fromEmotion": "joy",
+      "toEmotion": "neutral",
+      "transitionProbability": 0.4
+    }
+  ],
+  "deadZones": [
+    {"start": "20s", "end": "25s", "averageValence": 0.1}
+  ],
+  "confidence": float
+}
+
+5. emotionalPatterns
+{
+  "emotionTransitionMatrix": {
+    "joy_to_neutral": 0.4,
+    "neutral_to_surprise": 0.3,
+    "surprise_to_neutral": 0.5
+  },
+  "peakRhythm": {
+    "peakSpacingMean": float,
+    "peakSpacingVariance": float,
+    "regularityScore": float,
+    "peakCount": int
+  },
+  "emotionalArchetype": "rollercoaster" | "steady_positive" | "monotonous" | "volatile" | "flat",
+  "archetypeFlags": {
+    "hasEmotionalRollercoaster": boolean,
+    "hasFlatArc": boolean,
+    "isPositiveDominant": boolean,
+    "isNegativeDominant": boolean,
+    "isEmotionallyDiverse": boolean
+  },
+  "mlTags": ["high_variability", "positive_bias", "regular_peaks"],
+  "confidence": float
+}
+
+6. emotionalQuality
+{
+  "dataCompleteness": float,
+  "expressionDetectionRate": float,
+  "timelineCoverage": float,
+  "analysisParameters": {
+    "sampleInterval": int,
+    "intensityThreshold": float
+  },
+  "overallConfidence": float
+}
+
+Constraints:
+- Output ONLY the 6 JSON blocks, no additional text
+- All timestamps must align with input data
+- Include confidence scores based on data quality (0.0-1.0)
+- Report absences explicitly (empty arrays, null values)
+- Use descriptive values, not prescriptive judgments
+- Classification thresholds:
+  - hasEmotionalRollercoaster = true if emotion_variability > 0.6 AND emotion_change_rate > 0.4
+  - hasFlatArc = true if emotional_trajectory == "flat" AND emotion_variability < 0.3
+  - isEmotionallyDiverse = true if emotion_diversity > 0.5
+  - isPositiveDominant = true if positive_ratio > 0.6 AND negative_ratio < 0.3
+  - isNegativeDominant = true if negative_ratio > 0.6 AND positive_ratio < 0.3
+  - emotionalArchetype = "rollercoaster" if hasEmotionalRollercoaster
+  - emotionalArchetype = "steady_positive" if emotional_consistency > 0.7 AND positive_ratio > 0.6
+  - emotionalArchetype = "monotonous" if emotion_variability < 0.3 AND emotion_diversity < 0.3
+  - emotionalArchetype = "volatile" if emotion_change_rate > 0.6
+  - emotionalArchetype = "flat" if hasFlatArc
+  - conflictsDetected = true if emotion_gesture_alignment < 0.5
+  - Identify dead zones where average valence < 0.2
+  - Calculate neutral ratio as 1 - (positive_ratio + negative_ratio)

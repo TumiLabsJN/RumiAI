@@ -1,0 +1,213 @@
+Goal: Extract metadata features as structured data for ML analysis
+
+Input File: unified_analysis/[video_id].json
+
+You will receive precomputed metadata metrics:
+- caption_text
+- caption_length
+- word_count
+- hashtag_count
+- hashtag_list
+- emoji_count
+- emoji_list
+- mention_count
+- mention_list
+- link_present
+- language_code
+- video_duration
+- publish_time
+- view_count
+- like_count
+- comment_count
+- share_count
+- save_count
+- engagement_rate
+- creator_username
+- creator_follower_count
+- music_id
+- effect_ids
+- readability_score
+- sentiment_analysis
+- keyword_extraction
+- entity_recognition
+
+Raw Data (for validation):
+- static_metadata
+- videoStats
+- authorStats
+
+Output the following 6 modular blocks:
+
+1. metadataCoreMetrics
+{
+  "captionLength": int,
+  "wordCount": int,
+  "hashtagCount": int,
+  "emojiCount": int,
+  "mentionCount": int,
+  "linkPresent": boolean,
+  "videoDuration": float,
+  "publishHour": int,
+  "publishDayOfWeek": int,
+  "viewCount": int,
+  "likeCount": int,
+  "saveCount": int,
+  "engagementRate": float,
+  "confidence": float
+}
+
+2. metadataDynamics
+{
+  "hashtagStrategy": "minimal" | "moderate" | "heavy" | "spam",
+  "captionStyle": "storytelling" | "direct" | "question" | "list" | "minimal",
+  "emojiDensity": float,
+  "mentionDensity": float,
+  "readabilityScore": float,
+  "sentimentPolarity": float,
+  "sentimentCategory": "positive" | "negative" | "neutral" | "mixed",
+  "urgencyLevel": "high" | "medium" | "low" | "none",
+  "viralPotentialScore": float,
+  "confidence": float
+}
+
+3. metadataInteractions
+{
+  "hashtagRelevance": {
+    "trendingCount": int,
+    "nicheCount": int,
+    "brandedCount": int,
+    "genericCount": int,
+    "relevanceScore": float
+  },
+  "captionVideoAlignment": {
+    "topicConsistency": float,
+    "promiseDelivery": float,
+    "lengthAppropriate": boolean
+  },
+  "engagementAlignment": {
+    "likesToViewsRatio": float,
+    "commentsToViewsRatio": float,
+    "sharesToViewsRatio": float,
+    "savesToViewsRatio": float,
+    "aboveAverageEngagement": boolean
+  },
+  "creatorContext": {
+    "followerCount": int,
+    "establishedCreator": boolean,
+    "typicalEngagementRate": float
+  },
+  "confidence": float
+}
+
+4. metadataKeyEvents
+{
+  "hashtags": [
+    {
+      "tag": "#fyp",
+      "position": 1,
+      "type": "generic" | "trending" | "niche" | "branded",
+      "estimatedReach": "high" | "medium" | "low"
+    }
+  ],
+  "emojis": [
+    {
+      "emoji": "🔥",
+      "count": 2,
+      "sentiment": "positive",
+      "emphasis": true
+    }
+  ],
+  "hooks": [
+    {
+      "text": "wait for it",
+      "position": "start" | "middle" | "end",
+      "type": "curiosity" | "promise" | "question" | "challenge",
+      "strength": float
+    }
+  ],
+  "callToActions": [
+    {
+      "text": "follow for more",
+      "type": "follow" | "like" | "comment" | "share" | "visit",
+      "explicitness": "direct" | "implied",
+      "urgency": "high" | "medium" | "low"
+    }
+  ],
+  "keyPhrases": [
+    {
+      "phrase": "mind blown",
+      "category": "reaction" | "benefit" | "feature" | "emotion",
+      "impact": float
+    }
+  ],
+  "confidence": float
+}
+
+5. metadataPatterns
+{
+  "contentCategory": "sports" | "comedy" | "education" | "lifestyle" | "music" | "food" | "other",
+  "viralFormula": "hook_payoff" | "tutorial" | "story_arc" | "reaction" | "challenge" | "other",
+  "captionTechniques": [
+    "curiosity_gap",
+    "social_proof", 
+    "urgency",
+    "relatability",
+    "controversy",
+    "humor"
+  ],
+  "linguisticMarkers": {
+    "questionCount": int,
+    "exclamationCount": int,
+    "ellipsisCount": int,
+    "capsLockWords": int,
+    "personalPronounCount": int,
+    "imperativeCount": int
+  },
+  "hashtagPatterns": {
+    "leadWithGeneric": boolean,
+    "sandwichStrategy": boolean,
+    "allCaps": boolean,
+    "mixedLanguages": boolean
+  },
+  "mlTags": [
+    "high_engagement_caption",
+    "trending_optimized",
+    "cta_present",
+    "hook_driven",
+    "emoji_rich"
+  ],
+  "confidence": float
+}
+
+6. metadataQuality
+{
+  "dataCompleteness": float,
+  "captionPresent": boolean,
+  "hashtagsPresent": boolean,
+  "statsAvailable": boolean,
+  "publishTimeAvailable": boolean,
+  "creatorDataAvailable": boolean,
+  "musicDataAvailable": boolean,
+  "languageDetected": boolean,
+  "captionQuality": "high" | "medium" | "low" | "empty",
+  "hashtagQuality": "relevant" | "mixed" | "spammy" | "none",
+  "overallConfidence": float
+}
+
+Constraints:
+- Output ONLY the 6 JSON blocks, no additional text
+- Include confidence scores based on data quality (0.0-1.0)
+- Report absences explicitly (empty arrays, null values, boolean flags)
+- Use descriptive values, not prescriptive judgments
+- Classification thresholds:
+  - hashtagStrategy: "minimal" if count < 3, "moderate" if 3-7, "heavy" if 8-15, "spam" if > 15
+  - captionStyle: "storytelling" if > 3 sentences, "question" if ends with ?, "list" if contains numbered items, "direct" if < 2 sentences, "minimal" if < 10 words
+  - urgencyLevel: "high" if contains ["now", "today", "last chance", "ends soon"], "medium" if contains ["limited", "don't miss", "hurry"], "low" if contains ["soon", "coming"], "none" otherwise
+  - sentimentCategory: Based on sentiment_analysis scores
+  - viralFormula: "hook_payoff" if starts with question/curiosity and delivers answer
+  - establishedCreator: true if follower_count > 10000
+  - captionQuality: "high" if readability_score > 0.7 AND word_count > 10, "medium" if readability_score > 0.5, "low" if < 0.5, "empty" if no caption
+  - hashtagQuality: "relevant" if > 70% match content, "spammy" if > 50% generic tags, "mixed" otherwise
+  - hook position: "start" if in first 20% of caption, "end" if in last 20%, "middle" otherwise
+  - emoji emphasis: true if emoji_count / word_count > 0.1
+  - viralPotentialScore: Calculated from engagement_rate, hashtag relevance, and hook strength

@@ -1,0 +1,165 @@
+Goal: Extract visual overlay features as structured data for ML analysis
+
+Input File: unified_analysis/[video_id].json
+
+You will receive precomputed visual overlay metrics:
+- avg_texts_per_second
+- unique_text_count
+- time_to_first_text
+- avg_text_display_duration
+- overlay_rhythm (appearance_intervals, burst_windows, breathing_room_ratio)
+- clutter_timeline
+- avg_simultaneous_texts
+- readability_components (avg_contrast_ratio, avg_text_size_normalized, center_screen_percentage, occlusion_events)
+- text_position_distribution (top_third, middle_third, bottom_third)
+- text_size_variance
+- dominant_text_changes
+- cta_reinforcement_matrix (text_only, text_gesture, text_sticker, all_three)
+- text_semantic_groups (product_mentions, urgency_phrases, social_proof, questions, other_text)
+- text_speech_alignment (text_matches_speech, text_precedes_speech, text_follows_speech, text_contradicts_speech)
+- text_gesture_coordination (aligned, misaligned, neutral)
+
+Raw Timeline Data (for validation):
+- textOverlayTimeline
+- stickerTimeline
+- gestureTimeline
+- speechTimeline
+- frame_dimensions
+
+Output the following 6 modular blocks:
+
+1. overlayCoreMetrics
+{
+  "avgTextsPerSecond": float,
+  "uniqueTextCount": int,
+  "timeToFirstText": float,
+  "avgTextDisplayDuration": float,
+  "avgSimultaneousTexts": float,
+  "textSizeVariance": float,
+  "dominantTextChanges": int,
+  "totalStickerCount": int,
+  "totalTextElements": int,
+  "confidence": float
+}
+
+2. overlayRhythmAndDensity
+{
+  "appearanceIntervals": [float],
+  "burstWindows": ["0-5s", "15-20s"],
+  "breathingRoomRatio": float,
+  "clutterTimeline": [
+    {"start": 0, "end": 5, "text": 3, "sticker": 1, "total": 4},
+    {"start": 5, "end": 10, "text": 2, "sticker": 0, "total": 2}
+  ],
+  "densityPattern": "front_loaded" | "even" | "back_loaded" | "burst_heavy",
+  "peakDensityWindow": string,
+  "confidence": float
+}
+
+3. overlayReadabilityAndPosition
+{
+  "readabilityMetrics": {
+    "avgContrastRatio": float,
+    "avgTextSizeNormalized": float,
+    "centerScreenPercentage": float,
+    "mobileOptimized": boolean
+  },
+  "textPositionDistribution": {
+    "topThird": float,
+    "middleThird": float,
+    "bottomThird": float
+  },
+  "occlusionEvents": int,
+  "readabilityScore": float,
+  "confidence": float
+}
+
+4. overlaySemanticContent
+{
+  "textSemanticGroups": {
+    "productMentions": int,
+    "urgencyPhrases": int,
+    "socialProof": int,
+    "questions": int,
+    "otherText": int
+  },
+  "textCategories": {
+    "headline": int,
+    "subtitle": int,
+    "cta": int,
+    "caption": int,
+    "numbers": int,
+    "hashtag": int
+  },
+  "ctaReinforcementMatrix": {
+    "textOnly": int,
+    "textGesture": int,
+    "textSticker": int,
+    "allThree": int
+  },
+  "dominantContentType": string,
+  "confidence": float
+}
+
+5. overlayMultimodalAlignment
+{
+  "textSpeechAlignment": {
+    "textMatchesSpeech": float,
+    "textPrecedesSpeech": float,
+    "textFollowsSpeech": float,
+    "textContradictsSpeech": float
+  },
+  "textGestureCoordination": {
+    "aligned": float,
+    "misaligned": float,
+    "neutral": float
+  },
+  "keyAlignmentMoments": [
+    {
+      "timestamp": 5.2,
+      "type": "text_gesture_sync",
+      "elements": ["CTA text", "pointing gesture"]
+    }
+  ],
+  "overallSyncScore": float,
+  "confidence": float
+}
+
+6. overlayQuality
+{
+  "dataCompleteness": float,
+  "textDetectionRate": float,
+  "stickerDetectionRate": float,
+  "frameDataAvailable": boolean,
+  "mlTags": ["text_heavy", "cta_focused", "multi_reinforced", "position_varied"],
+  "overlayStrategy": "minimal" | "moderate" | "heavy" | "dynamic",
+  "patternFlags": {
+    "hasTextBursts": boolean,
+    "hasCTAReinforcement": boolean,
+    "isCluttered": boolean,
+    "isMobileOptimized": boolean
+  },
+  "overallConfidence": float
+}
+
+Constraints:
+- Output ONLY the 6 JSON blocks, no additional text
+- All timestamps must align with input data
+- Include confidence scores based on data quality (0.0-1.0)
+- Report absences explicitly (empty arrays, zero counts)
+- Use descriptive values, not prescriptive judgments
+- Classification thresholds:
+  - overlayStrategy = "minimal" if avg_texts_per_second < 0.3
+  - overlayStrategy = "moderate" if avg_texts_per_second 0.3-0.8
+  - overlayStrategy = "heavy" if avg_texts_per_second > 0.8
+  - overlayStrategy = "dynamic" if text_size_variance > 0.5
+  - densityPattern = "front_loaded" if first third has 50%+ of overlays
+  - densityPattern = "back_loaded" if last third has 50%+ of overlays
+  - densityPattern = "burst_heavy" if burst_windows.length > 3
+  - mobileOptimized = true if avg_text_size_normalized > 0.03 AND center_screen_percentage > 0.7
+  - readabilityScore = (contrast_ratio * 0.4) + (text_size * 0.4) + (center_screen * 0.2)
+  - hasTextBursts = true if burst_windows.length > 0
+  - hasCTAReinforcement = true if any CTA reinforcement > 0
+  - isCluttered = true if avg_simultaneous_texts > 3
+  - dominantContentType based on highest count in semantic groups
+  - Categorize text: CTAs contain ["buy", "shop", "follow", "click"], headlines are largest text

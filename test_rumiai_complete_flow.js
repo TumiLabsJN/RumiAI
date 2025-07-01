@@ -93,6 +93,7 @@ async function runCompleteFlow() {
             likes: parseInt(videoData.diggCount || videoData.likeCount || 0),
             comments: parseInt(videoData.commentCount || 0),
             shares: parseInt(videoData.shareCount || 0),
+            saves: parseInt(videoData.collectCount || 0),
             duration: videoData.videoMeta?.duration || videoData.duration || 0,
             createTime: videoData.createTimeISO || videoData.createTime,
             downloadUrl: videoData.mediaUrls?.[0] || videoData.videoUrl || videoData.downloadAddr,
@@ -102,13 +103,14 @@ async function runCompleteFlow() {
                 displayName: videoData.authorMeta?.nickName || '',
                 verified: videoData.authorMeta?.verified || false
             },
+            music: videoData.musicMeta || {},
             engagementRate: 0,
             rank: 1 // Single video, so rank is 1
         };
         
         // Calculate engagement rate
         if (normalizedVideo.views > 0) {
-            const totalEngagement = normalizedVideo.likes + normalizedVideo.comments + normalizedVideo.shares;
+            const totalEngagement = normalizedVideo.likes + normalizedVideo.comments + normalizedVideo.shares + normalizedVideo.saves;
             normalizedVideo.engagementRate = parseFloat(((totalEngagement / normalizedVideo.views) * 100).toFixed(2));
         }
 

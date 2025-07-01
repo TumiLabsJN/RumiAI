@@ -1,37 +1,4 @@
-# Environment
-.env
-venv/
-env/
-.venv/
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-
-# Node
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Credentials
-credentials.json
-*-key.json
-wif-credential.json
+# === RumiAIv2 Git Ignore ===
 
 # 🧠 Analysis outputs
 insights/
@@ -49,42 +16,149 @@ local_analysis_outputs/
 analysis_results/
 validation_reports/
 test_output/
-inputs/
-downloads/
+outputs/
 *.pdf
 
-# Temporary files
+# 🎥 Media files
+videos/
+downloads/
 temp/
-tmp/
-*.tmp
-*.log
-
-# Large data files
+inputs/
 *.mp4
-*.avi
 *.mov
+*.avi
 *.mkv
+*.wav
+*.mp3
 *.jpg
-*.jpeg
 *.png
+*.jpeg
 *.gif
 
-# Analysis outputs
+# 🛠️ Generated artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*$py.class
+*.so
+.Python
+*.pkl
+*.joblib
+*.log
+*.tmp
+*.cache
+.ipynb_checkpoints/
+*.ipynb
+*.h5
+*.model
+
+# 💻 System files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.bak
+*~
+.git/gc.log
+
+# 🧪 Local config & secrets
+.env
+.env.*
+!.env.example
+local_config/
+secrets/
+*.sqlite3
+*.db
+credentials.json
+*-key.json
+service-account.json
+wif-credential.json
+*credential*.json
+!.env.example
+
+# 📦 Dependencies (but keep lockfiles!)
+node_modules/
+venv/
+env/
+.venv/
+.Python
+*.egg-info/
+dist/
+build/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 🔧 IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# 📊 Test coverage
+htmlcov/
+.coverage
+.pytest_cache/
+
+# 📁 Archives and backups
+*.tar.gz
+*.zip
+*.backup*
+*backup*.py
+*backup*.js
+
+# 🧪 Test/Debug outputs and analysis files
+test_*.json
+*_test.json
+*analysis*.json
 *_analysis.json
 *_timeline.json
 *_detections.json
 *_prompt.json
+!package.json
+!package-lock.json
 pipeline_state.json
 integrated_processed_videos.json
 pipeline_summary.json
+all_prompts_summary.txt
+cristiano_analysis_*.json
+local_analysis_*.json
+manual_analysis_result.json
+creative_density_sample_*.json
+
+# 📝 Documentation builds
+docs/_build/
+docs/.doctrees/
+
+# 🔧 Local scripts and tools
+debug-*.js
+test-*.js
+fix-*.js
+check-*.js
+verify-*.js
+wait-*.js
+start-*.js
+migrate-*.sh
+setup_*.sh
+run_*.sh
+!setup.sh
+!run_video_prompts_validated_v2.py
+!run_claude_insight.py
+
+# 🎯 Model files
+yolov8*.pt
+*.pt
+*.weights
+
+# 🗑️ Temporary and cache files
+*.token
+*.txt.backup.*
+*.patch
+gcloud-token.txt*
 
 # Generated reports
 *.html
-all_prompts_summary.txt
 
-# Jupyter
-.ipynb_checkpoints/
-*.ipynb
-
-# Git
-.git/gc.log
+# Temporary development files
+*.tmp
+tmp/

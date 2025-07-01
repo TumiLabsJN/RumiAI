@@ -1,24 +1,141 @@
+Goal: Extract creative density features as structured data for ML analysis
+
 Input File: unified_analysis/[video_id].json
 
-Task:
-- Measure the creative density of this video.
-- Count how many unique creative signals appear over time:
-  - Gestures
-  - Stickers
-  - Text overlays
-  - Scene changes
-  - Facial expressions
-- Classify creative density as:
-  - Minimal / Medium / Heavy
-- Report whether the creative signals are clustered (front-loaded, back-loaded) or spread evenly.
+You will receive precomputed creative density metrics:
+- `average_density`: Mean creative elements per second
+- `max_density`: Maximum elements in any second
+- `min_density`: Minimum elements in any second
+- `std_deviation`: Standard deviation of density
+- `total_creative_elements`: Sum of all creative elements
+- `element_distribution`: Counts by type (text, sticker, emoji, effect, transition)
+- `peak_density_moments`: Top 5-10 peaks with timestamp, total_elements, surprise_score, breakdown
+- `density_pattern_flags`: Boolean flags (strong_opening_hook, crescendo_pattern, front_loaded, etc.)
+- `density_curve`: Per-second density and primary_element
+- `scene_changes`: Total count from sceneChangeTimeline
+- `timeline_frame_counts`: effect_count, transition_count, object_detection_frames, etc.
+
+Raw Timeline Data (for validation):
+- `textOverlayTimeline`: Text overlays with categories
+- `stickerTimeline`: Sticker placements
+- `emojiTimeline`: Floating emoji overlays
+- `effectTimeline`: Visual effects and filters
+- `transitionTimeline`: Creative transitions (wipes, fades, effects)
+
+Output the following 6 modular blocks:
+
+1. densityCoreMetrics
+{
+  "avgDensity": float,
+  "maxDensity": float,
+  "minDensity": float,
+  "stdDeviation": float,
+  "totalElements": int,
+  "elementsPerSecond": float,
+  "elementCounts": {
+    "text": int,
+    "sticker": int,
+    "emoji": int,
+    "effect": int,
+    "transition": int
+  },
+  "timelineCoverage": float,
+  "confidence": float
+}
+
+2. densityDynamics
+{
+  "densityCurve": [
+    {"second": 0, "density": 3, "primaryElement": "text"},
+    {"second": 2, "density": 1, "primaryElement": "effect"}
+  ],
+  "volatility": float,
+  "accelerationPattern": "front_loaded" | "even" | "back_loaded" | "oscillating",
+  "densityProgression": "increasing" | "decreasing" | "stable" | "erratic",
+  "emptySeconds": [7, 8, 9],
+  "confidence": float
+}
+
+3. densityInteractions
+{
+  "multiModalPeaks": [
+    {
+      "timestamp": "5-6s",
+      "elements": ["text", "effect", "transition"],
+      "syncType": "reinforcing" | "complementary" | "redundant"
+    }
+  ],
+  "elementCooccurrence": {
+    "text_effect": 5,
+    "text_transition": 3,
+    "effect_sceneChange": 2
+  },
+  "dominantCombination": "text_effect",
+  "confidence": float
+}
+
+4. densityKeyEvents
+{
+  "peaks": [
+    {
+      "timestamp": "5-6s",
+      "second": 5,
+      "totalElements": 4,
+      "surpriseScore": 2.1,
+      "breakdown": {"text": 2, "effect": 1, "transition": 1}
+    }
+  ],
+  "deadZones": [
+    {"start": 7, "end": 9, "duration": 2}
+  ],
+  "densityShifts": [
+    {"timestamp": 10, "from": "high", "to": "low"}
+  ],
+  "confidence": float
+}
+
+5. densityPatterns
+{
+  "structuralPatterns": {
+    "strongOpeningHook": true,
+    "crescendoPattern": false,
+    "frontLoaded": true,
+    "consistentDensity": false,
+    "dualPeakStructure": false,
+    "multiPeakRhythm": true
+  },
+  "breathingRoomRatio": float,
+  "densityClassification": "heavy" | "medium" | "minimal",
+  "pacingStyle": "dynamic" | "consistent" | "erratic",
+  "cognitiveLoadCategory": "high" | "medium" | "low",
+  "mlTags": ["hook_heavy", "text_driven", "multi_peak", "front_loaded"],
+  "confidence": float
+}
+
+6. densityQuality
+{
+  "dataCompleteness": float,
+  "timelineCoverage": float,
+  "detectionReliability": {
+    "text": 0.95,
+    "effect": 0.90,
+    "transition": 0.85,
+    "sticker": 0.92,
+    "emoji": 0.88
+  },
+  "overallConfidence": float
+}
 
 Constraints:
-- Use gestureTimeline, stickerTimeline, sceneChangeTimeline, expressionTimeline, and textOverlayTimeline.
-
-Response Format:
-{
-  "creativeDensityLevel": "...",
-  "signalCount": ...,
-  "distributionPattern": "...",
-  "notes": "..."
-}
+- Output ONLY the 6 JSON blocks, no additional text
+- All timestamps must align with input data
+- Include confidence scores based on data quality
+- Report absences explicitly (empty arrays, false flags)
+- Use descriptive values, not prescriptive judgments
+- Classify density based on elements_per_second: <0.5 = minimal, 0.5-1.5 = medium, >1.5 = heavy
+- Classify cognitive load based on max_density and volatility combinations
+- Identify dead zones from density_curve where density = 0
+- effect = AR filters, color overlays, screen effects (not scene content)
+- transition = creative transitions only (not simple cuts)
+- strong_opening_hook = true if first 3 seconds have >2.0 density
+- breathingRoomRatio = percentage of video with 0-1 elements

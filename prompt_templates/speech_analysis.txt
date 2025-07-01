@@ -1,0 +1,253 @@
+Goal: Extract speech analysis features as structured data for ML analysis
+
+Input File: unified_analysis/[video_id].json
+
+You will receive precomputed speech metrics:
+- word_count
+- speech_density
+- speech_coverage
+- speech_rate_wpm
+- first_word_timestamp
+- last_word_timestamp
+- wpm_by_segment
+- speech_acceleration_score
+- speech_rhythm_type
+- rhythm_consistency_score
+- speech_front_load_ratio
+- pause_analysis
+- hook_density_per_10s
+- hook_phrases
+- opening_hook_strength
+- cta_density_per_10s
+- cta_phrases
+- cta_clustering
+- clarity_score_by_window
+- overall_clarity_score
+- filler_word_ratio
+- mumbling_segments
+- background_noise_ratio
+- direct_address_count
+- inclusive_language_ratio
+- repetition_patterns
+- question_count
+- speech_bursts
+- burst_pattern
+- energy_level_windows
+- energy_variance
+- climax_timestamp
+- gesture_sync_ratio
+- face_on_screen_during_speech
+- speech_visual_alignment
+- off_camera_speech_segments
+- speech_only_ratio
+- visual_punctuation_count
+- expression_variety_during_speech
+- speech_pattern_tags
+- speech_type
+- speaker_changes
+- dominant_speaker_ratio
+
+Raw Timeline Data (for validation):
+- speechTimeline
+- transcript
+- gestureTimeline
+- expressionTimeline
+- camera_distance_timeline
+
+Output the following 6 modular blocks:
+
+1. speechCoreMetrics
+{
+  "wordCount": int,
+  "speechDensity": float,
+  "speechCoverage": float,
+  "speechRateWpm": float,
+  "firstWordTimestamp": float,
+  "lastWordTimestamp": float,
+  "overallClarity": float,
+  "fillerWordRatio": float,
+  "directAddressCount": int,
+  "questionCount": int,
+  "speechType": "monologue" | "dialogue" | "mixed",
+  "confidence": float
+}
+
+2. speechDynamics
+{
+  "wpmBySegment": {
+    "0-5s": 150,
+    "5-10s": 165,
+    "10-15s": 140
+  },
+  "speechAccelerationScore": float,
+  "speechRhythmType": "staccato" | "flowing" | "building" | "erratic",
+  "rhythmConsistencyScore": float,
+  "speechFrontLoadRatio": float,
+  "burstPattern": "front_loaded" | "distributed" | "climax",
+  "energyLevelWindows": {
+    "0-5s": 0.8,
+    "5-10s": 0.6
+  },
+  "energyVariance": float,
+  "climaxTimestamp": float,
+  "confidence": float
+}
+
+3. speechInteractions
+{
+  "gestureSyncRatio": float,
+  "faceOnScreenDuringSpeech": float,
+  "speechVisualAlignment": {
+    "gestureEmphasisMoments": [
+      {
+        "timestamp": 5.2,
+        "word": "THIS",
+        "gesture": "pointing",
+        "syncScore": 0.9
+      }
+    ],
+    "expressionPeaksDuringSpeech": [
+      {
+        "timestamp": 12.3,
+        "expression": "surprise",
+        "speech": "you won't believe",
+        "alignment": "perfect"
+      }
+    ],
+    "lipSyncQuality": float,
+    "bodyLanguageCongruence": float
+  },
+  "visualPunctuationCount": int,
+  "expressionVarietyDuringSpeech": float,
+  "confidence": float
+}
+
+4. speechKeyEvents
+{
+  "pauseAnalysis": {
+    "gaps": [
+      {"start": 5.2, "duration": 1.5, "type": "dramatic"},
+      {"start": 10.1, "duration": 0.8, "type": "breath"}
+    ],
+    "totalPauseTime": float,
+    "pauseCount": int,
+    "longestPauseDuration": float,
+    "strategicPauses": int,
+    "awkwardPauses": int
+  },
+  "speechBursts": [
+    {
+      "start": 2.1,
+      "end": 5.3,
+      "words": 45,
+      "wpm": 180,
+      "type": "rapid"
+    }
+  ],
+  "offCameraSpeechSegments": [
+    {
+      "start": 15.2,
+      "end": 18.5,
+      "speechContent": "follow for more tips"
+    }
+  ],
+  "mumblingSections": [
+    {"start": 12.3, "end": 13.1, "clarity": 0.45}
+  ],
+  "confidence": float
+}
+
+5. speechPatterns
+{
+  "hookAnalysis": {
+    "hookDensityPer10s": {
+      "0-10s": 2,
+      "10-20s": 1,
+      "20-30s": 0
+    },
+    "hookPhrases": [
+      {
+        "text": "Did you know",
+        "timestamp": 2.3,
+        "type": "question",
+        "confidence": 0.9
+      }
+    ],
+    "openingHookStrength": float,
+    "hookPresent": boolean
+  },
+  "ctaAnalysis": {
+    "ctaDensityPer10s": {
+      "0-10s": 0,
+      "10-20s": 1,
+      "20-30s": 2
+    },
+    "ctaPhrases": [
+      {
+        "text": "follow for more",
+        "timestamp": 25.1,
+        "urgency": "medium",
+        "category": "engagement"
+      }
+    ],
+    "ctaClustering": [
+      {"start": 20, "end": 30, "count": 3}
+    ],
+    "ctaPresent": boolean
+  },
+  "repetitionPatterns": {
+    "phrases": [
+      {"text": "trust me", "count": 3, "timestamps": [5.2, 15.3, 25.1]}
+    ],
+    "emphasisWords": [
+      {"word": "NEVER", "count": 2}
+    ]
+  },
+  "speechPatternTags": [
+    "rapid_intro",
+    "has_dramatic_pauses",
+    "repetitive_emphasis",
+    "direct_address_heavy",
+    "cta_clustered",
+    "energy_building",
+    "clear_articulation",
+    "high_gesture_sync",
+    "face_focused_delivery"
+  ],
+  "confidence": float
+}
+
+6. speechQuality
+{
+  "dataCompleteness": float,
+  "transcriptQuality": float,
+  "clarityScoreByWindow": {
+    "0-5s": 0.92,
+    "5-10s": 0.88,
+    "10-15s": 0.85
+  },
+  "backgroundNoiseRatio": float,
+  "inclusiveLanguageRatio": float,
+  "speakerAnalysis": {
+    "speakerChanges": int,
+    "dominantSpeakerRatio": float
+  },
+  "speechOnlyRatio": float,
+  "overallConfidence": float
+}
+
+Constraints:
+- Output ONLY the 6 JSON blocks, no additional text
+- All timestamps must align with input data
+- Include confidence scores based on data quality (0.0-1.0)
+- Report absences explicitly (empty arrays, null values, boolean flags)
+- Use descriptive values, not prescriptive judgments
+- If speech_coverage < 0.1 or word_count < 5, set all blocks to minimal values with speechPresent: false
+- Classification thresholds:
+  - hookPresent = true if hook_phrases.length > 0 OR opening_hook_strength > 0.5
+  - ctaPresent = true if cta_phrases.length > 0
+  - speechRhythmType based on rhythm patterns in data
+  - burstPattern based on distribution of high WPM segments
+  - pause type = "dramatic" if duration > 2.0, "breath" if 0.5-1.0, "strategic" if 1.0-2.0
+  - alignment = "perfect" if sync_score > 0.8, "good" if 0.6-0.8, "poor" if < 0.6
+  - urgency = "high" if contains ["now", "today", "limited"], "medium" if contains ["soon", "don't miss"], "low" otherwise
