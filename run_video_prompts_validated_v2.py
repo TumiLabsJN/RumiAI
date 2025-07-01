@@ -342,8 +342,12 @@ def compute_creative_density_analysis(timelines, duration):
         for timestamp, data in timeline_data.items():
             # Parse timestamp
             try:
-                second = int(timestamp.split('-')[0])
-                if 0 <= second < seconds:
+                # Handle negative timestamps by taking absolute value
+                start_str = timestamp.split('-')[0]
+                second = abs(int(start_str))
+                
+                # Ensure second is within video duration
+                if second < seconds:
                     # Count elements based on type
                     if timeline_type == 'text':
                         count = len(data.get('texts', [])) if 'texts' in data else 1
@@ -439,10 +443,9 @@ def compute_creative_density_analysis(timelines, duration):
     if len(significant_peaks) >= 3:
         patterns.append('multi_peak_rhythm')
     
-    # Build density curve (sample every 1-2 seconds)
+    # Build density curve (include all seconds for complete data)
     density_curve = []
-    sample_interval = 2 if seconds > 30 else 1
-    for i in range(0, seconds, sample_interval):
+    for i in range(seconds):
         # Find primary element type at this second
         elements = element_types_per_second[i]
         primary_element = max(elements.items(), key=lambda x: x[1])[0] if any(elements.values()) else 'none'
