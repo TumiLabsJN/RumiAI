@@ -159,7 +159,7 @@ async function runCompleteFlow() {
         
         let jobStatus;
         let attempts = 0;
-        const maxAttempts = 60; // 5 minutes max
+        const maxAttempts = 180; // 15 minutes max
         let lastPhase = '';
 
         while (attempts < maxAttempts) {
@@ -183,7 +183,7 @@ async function runCompleteFlow() {
         }
 
         if (jobStatus.status !== 'completed') {
-            throw new Error('Analysis timed out after 5 minutes');
+            throw new Error('Analysis timed out after 15 minutes');
         }
         console.log('');
 

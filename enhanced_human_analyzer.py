@@ -105,77 +105,75 @@ class EnhancedHumanAnalyzer:
         }
     
     def analyze_frame(self, image, frame_number, timestamp):
-        """Comprehensive frame analysis"""
+        """Comprehensive frame analysis with reduced output"""
         results = {
             'frame': frame_number,
             'timestamp': timestamp,
-            'persons': [],
-            'scene_segmentation': {},
+            'person_presence': {},
+            'face_summary': {},
+            'body_summary': {},
             'action_recognition': {},
-            'gaze_analysis': {},
-            'body_pose': {},
-            'face_tracking': {}
+            'scene_summary': {}
         }
-        
+
         # Convert to RGB
         rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         h, w = image.shape[:2]
-        
-        # 1. Body Pose Detection
+
+        # 1. Body Pose Detection (store summary only)
         pose_results = self.pose.process(rgb_image)
         if pose_results.pose_landmarks:
             body_analysis = self._analyze_body_pose(pose_results.pose_landmarks, w, h)
-            results['body_pose'] = body_analysis
-            
-            # Check if person is visible
             visibility_score = np.mean([lm.visibility for lm in pose_results.pose_landmarks.landmark])
-            results['body_pose']['body_visibility_ratio'] = float(visibility_score)
-            results['body_pose']['pose_confidence'] = float(visibility_score)
-        
-        # 2. Face Detection and Tracking
+
+            results['body_summary'] = {
+                'posture': body_analysis['posture'],
+                'body_orientation': body_analysis['body_orientation'],
+                'gesture_complexity': round(body_analysis['gesture_complexity'], 3),
+                'body_visibility_ratio': round(float(visibility_score), 3)
+            }
+
+        # 2. Face Detection (store summary only)
         face_results = self.face_mesh.process(rgb_image)
         if face_results.multi_face_landmarks:
             faces = []
             for idx, face_landmarks in enumerate(face_results.multi_face_landmarks):
-                face_data = {
-                    'face_id': idx,
-                    'bbox': self._get_face_bbox(face_landmarks.landmark, w, h),
-                    'landmarks': self._extract_key_landmarks(face_landmarks.landmark),
-                    'expression': self._analyze_expression(face_landmarks.landmark, w, h),
-                    'gaze': self._analyze_gaze(face_landmarks.landmark, w, h)
-                }
-                faces.append(face_data)
-            
-            results['face_tracking'] = {
+                # Only analyze, don't store landmarks
+                expression = self._analyze_expression(face_landmarks.landmark, w, h)
+                gaze = self._analyze_gaze(face_landmarks.landmark, w, h)
+                faces.append({'expression': expression, 'gaze': gaze})
+
+            primary_face = faces[0] if faces else None
+            results['face_summary'] = {
                 'face_count': len(faces),
-                'faces': faces,
-                'primary_face': faces[0] if faces else None
+                'primary_expression': primary_face['expression'] if primary_face else None,
+                'primary_gaze_direction': primary_face['gaze']['gaze_direction'] if primary_face else None,
+                'eye_contact': primary_face['gaze']['eye_contact'] if primary_face else False
             }
-            
-            # Gaze analysis
-            if faces:
-                results['gaze_analysis'] = self._aggregate_gaze_data(faces)
-        
-        # 3. Scene Segmentation
+
+        # 3. Scene Segmentation (remove internal data)
         segmentation_results = self.selfie_segmentation.process(rgb_image)
         if segmentation_results.segmentation_mask is not None:
-            results['scene_segmentation'] = self._analyze_scene_segmentation(
+            scene_data = self._analyze_scene_segmentation(
                 segmentation_results.segmentation_mask, image
             )
-        
+            results['scene_summary'] = {
+                'person_to_background_ratio': round(scene_data['person_to_background_ratio'], 3),
+                'background_type': scene_data['background_type']
+            }
+
         # 4. Action Recognition
         results['action_recognition'] = self._recognize_actions(
-            pose_results, face_results, results.get('body_pose', {})
+            pose_results, face_results, results.get('body_summary', {})
         )
-        
+
         # 5. Person Presence Summary
         results['person_presence'] = {
             'has_face': bool(face_results.multi_face_landmarks),
             'has_body': bool(pose_results.pose_landmarks),
-            'face_count': len(face_results.multi_face_landmarks) if face_results.multi_face_landmarks else 0,
-            'is_multiple_people': len(face_results.multi_face_landmarks) > 1 if face_results.multi_face_landmarks else False
+            'face_count': len(face_results.multi_face_landmarks) if face_results.multi_face_landmarks else 0
         }
-        
+
         return results
     
     def _analyze_body_pose(self, landmarks, w, h):
@@ -298,8 +296,8 @@ class EnhancedHumanAnalyzer:
             'background_complexity': float(complexity_score),
             'background_type': 'complex' if complexity_score > 0.1 else 'simple',
             'person_screen_coverage': float(person_ratio),
-            '_background_histogram': hist,  # For temporal comparison
-            '_background_mask': background_mask  # For extraction
+            # '_background_histogram': hist,  # COMMENTED OUT
+            # '_background_mask': background_mask  # COMMENTED OUT
         }
     
     def _recognize_actions(self, pose_results, face_results, body_pose):
@@ -316,7 +314,7 @@ class EnhancedHumanAnalyzer:
         # Check each action pattern
         action_scores = {}
         for action_name, check_func in self.action_patterns.items():
-            score = check_func(pose_results.pose_landmarks, body_pose)
+            score = check_func(pose_results.pose_landmarks, body_pose if isinstance(body_pose, dict) else {})
             if score > 0.5:
                 action_scores[action_name] = score
                 actions['detected_actions'].append(action_name)
@@ -576,7 +574,7 @@ class EnhancedHumanAnalyzer:
         
         # Multiple people
         summary['multiple_person_frames'] = sum(1 for f in frame_analyses 
-                                              if f['person_presence']['is_multiple_people'])
+                                              if f['person_presence'].get('face_count', 0) > 1)
         
         # Actions
         for frame in frame_analyses:
@@ -585,12 +583,12 @@ class EnhancedHumanAnalyzer:
         
         # Gaze patterns
         eye_contact_frames = sum(1 for f in frame_analyses 
-                               if f.get('gaze_analysis', {}).get('primary_eye_contact', False))
+                               if f.get('face_summary', {}).get('eye_contact', False))
         summary['gaze_patterns']['eye_contact_ratio'] = eye_contact_frames / len(frame_analyses) if frame_analyses else 0
         
         # Scene analysis
-        person_coverages = [f['scene_segmentation'].get('person_to_background_ratio', 0) 
-                           for f in frame_analyses if 'scene_segmentation' in f]
+        person_coverages = [f['scene_summary'].get('person_to_background_ratio', 0) 
+                           for f in frame_analyses if 'scene_summary' in f]
         if person_coverages:
             summary['scene_analysis']['avg_person_coverage'] = np.mean(person_coverages)
         
